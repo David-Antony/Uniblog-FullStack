@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Campus News and Blog Platform - Stay updated with the latest campus news, announcements, and design blog posts.">
+    <title>Campus News and Blog Platform</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Page Loading Animation -->
+    <div id="pageLoader" class="page-loader" aria-hidden="true">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- ==================== Header Section ==================== -->
+    <header role="banner">
+        <!-- Hero Background Decoration -->
+        <div class="hero-deco" aria-hidden="true">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
+        
+        <!-- Navigation Bar -->
+        <nav class="navbar" role="navigation" aria-label="Main navigation">
+            <div class="container">
+                <a class="navbar-brand" href="#homepage" aria-label="Campus News and Blog Platform Home">Campus News and Blog Platform</a>
+                <span id="username-display" aria-live="polite" style="margin-left: 10px; font-weight: bold;"></span>
+                <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation menu" aria-expanded="false">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <div class="navbar-nav" id="navbarNav">
+                    <a href="blog.html" id="blogLink" class="primary-cta" aria-label="Add new blog post">Add Post</a>
+                    <a href="#" onclick="openModal('aboutModal')" aria-label="About this platform">ABOUT</a>
+                    <a href="logout.html" aria-label="Logout from the platform">LOGOUT</a>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Hero Banner -->
+        <section class="banner" role="region" aria-label="Hero section">
+            <div class="container">
+                <h1 class="banner-title">
+                    <span>News &</span> Design Blog
+                </h1>
+                <p>Everything you need to know about campus updates and design.</p>
+                
+                <!-- Search Form -->
+                <form class="search-form" role="search" aria-label="Search blog posts">
+                    <label for="searchInput" class="visually-hidden">Search posts</label>
+                    <input type="text" id="searchInput" class="search-input" placeholder="find your thoughts . . ." aria-label="Search blog posts">
+                    <button type="submit" class="search-btn" aria-label="Search">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="filter-btn" aria-expanded="false" aria-controls="filterPanel" aria-label="Toggle filter options">Filters</button>
+                </form>
+                
+                <!-- Filter Panel -->
+                <div class="filter-panel hidden" id="filterPanel" role="group" aria-label="Filter by category">
+                    <label>
+                        <input type="checkbox" class="filter-check" value="Announcement" checked aria-label="Filter by Announcement">
+                        Announcement
+                    </label>
+                    <label>
+                        <input type="checkbox" class="filter-check" value="Design" checked aria-label="Filter by Design">
+                        Design
+                    </label>
+                    <label>
+                        <input type="checkbox" class="filter-check" value="News" checked aria-label="Filter by News">
+                        News
+                    </label>
+                    <label>
+                        <input type="checkbox" class="filter-check" value="General" checked aria-label="Filter by General">
+                        General
+                    </label>
+                </div>
+                
+                <!-- Hero Statistics -->
+                <div class="hero-stats" role="status" aria-label="Platform statistics">
+                    <div class="stat">
+                        <span class="stat-number" id="stat-posts" aria-live="polite">–</span>
+                        <span class="stat-label">Posts</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">12</span>
+                        <span class="stat-label">Contributors</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">4.8k</span>
+                        <span class="stat-label">Reads</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </header>
+    <!-- End of Header Section -->
+
+    <!-- ==================== Main Content ==================== -->
+    <main>
+        <!-- Dynamic Blog Posts Section -->
+        <section class="container" id="dynamic-blog-posts" role="region" aria-labelledby="blog-posts-heading">
+            <h2 id="blog-posts-heading">Latest Blog Posts <span class="subtext">These are the new posts...</span></h2>
+            <div id="blogContainer" role="list" aria-live="polite" aria-busy="false"></div>
+        </section>
+
+        <!-- Design Items Section -->
+        <section class="design" id="design" role="region" aria-labelledby="design-heading">
+            <div class="container">
+                <div class="title">
+                    <h2 id="design-heading">Information & Announcement</h2>
+                    <p>Recent announcements on the blog</p>
+                    <button class="add-design-btn admin-only" onclick="openDesignModal()" style="display: none;" aria-label="Add new announcement">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Add New Announcement
+                    </button>
+                </div>
+                <div class="design-content" id="designContainer" role="list" aria-live="polite">
+                    <!-- Design items will be rendered dynamically here -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Blog Section -->
+        <section class="blog" id="blog" role="region" aria-labelledby="blog-heading">
+            <div class="container">
+                <div class="title">
+                    <h2 id="blog-heading">Latest Blog</h2>
+                    <p>Recent blogs about art & design</p>
+                    <button class="add-blog-btn admin-only" onclick="addStaticBlogItem()" style="display: none;" aria-label="Add new blog post">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Add New Blog
+                    </button>
+                </div>
+                <div class="blog-content" id="staticBlogContainer" role="list">
+                    <!-- Dynamically rendered by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about" id="about" role="region" aria-labelledby="about-heading">
+            <div class="container">
+                <div class="about-split">
+                    <div class="about-visual">
+                        <button class="carousel-btn prev-btn" onclick="prevAchiever()" aria-label="Previous achiever" aria-controls="achiever-image about-heading achiever-years achiever-desc-1 achiever-desc-2 achiever-quote">
+                            <span aria-hidden="true">&#10094;</span>
+                        </button>
+                        <div class="image-container">
+                            <img id="achiever-image" src="images/RATAN TATA.jpg" alt="Ratan Naval Tata portrait" class="image-hover" loading="lazy">
+                        </div>
+                        <button class="carousel-btn next-btn" onclick="nextAchiever()" aria-label="Next achiever" aria-controls="achiever-image about-heading achiever-years achiever-desc-1 achiever-desc-2 achiever-quote">
+                            <span aria-hidden="true">&#10095;</span>
+                        </button>
+                        <div class="quote-card">
+                            <p id="achiever-quote">"Go that extra mile—it's never crowded."</p>
+                        </div>
+                    </div>
+                    <div class="about-text">
+                        <div class="title">
+                            <h2 id="about-heading">Ratan Naval Tata</h2>
+                            <p id="achiever-years">1937 - 2024</p>
+                            <div class="achiever-admin-actions admin-only" style="display: none;">
+                                <button class="add-achiever-btn" onclick="addAchiever()" aria-label="Add new achiever">
+                                    <i class="fas fa-plus" aria-hidden="true"></i> Add
+                                </button>
+                                <button class="edit-achiever-btn" onclick="editAchiever()" aria-label="Edit achiever information">
+                                    <i class="fas fa-edit" aria-hidden="true"></i> Edit
+                                </button>
+                                <button class="delete-achiever-btn" onclick="deleteAchiever()" aria-label="Delete achiever">
+                                    <i class="fas fa-trash" aria-hidden="true"></i> Delete
+                                </button>
+                            </div>
+                        </div>
+                        <p id="achiever-desc-1">Ratan Tata transformed the Tata Group into a global powerhouse with acquisitions like Jaguar Land Rover and Corus.</p>
+                        <p id="achiever-desc-2">Renowned for humility and philanthropy, his work through Tata Trusts advances education, healthcare, and rural development.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- End of Main Content -->
+
+    <!-- ==================== Footer ==================== -->
+    <footer role="contentinfo">
+        <div class="social-links" aria-label="Social media links">
+            <a href="https://github.com/David-Antony" target="_blank" rel="noopener noreferrer" aria-label="Visit GitHub profile">
+                <i class="fab fa-github" aria-hidden="true"></i>
+            </a>
+            <a href="mailto:davidantony@karunya.edu.in" aria-label="Send email to davidantony@karunya.edu.in">
+                <i class="fas fa-envelope" aria-hidden="true"></i>
+            </a>
+            <a href="https://www.linkedin.com/in/david-antony-98698a249/" target="_blank" rel="noopener noreferrer" aria-label="Visit LinkedIn profile">
+                <i class="fab fa-linkedin" aria-hidden="true"></i>
+            </a>
+        </div>
+        <p>Contact: </p>
+        <p>BLOG-WEBSITE</p>
+        <span>&copy; 2024 Campus News and Blog Platform. All rights reserved.</span>
+    </footer>
+    <!-- End of Footer -->
+
+    <!-- ==================== Modals ==================== -->
+    
+    <!-- News Modal 1 -->
+    <div id="news-1" class="modal" role="dialog" aria-modal="true" aria-labelledby="news-1-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('news-1')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="news-1-title">Toycathon 2021</h2>
+            <p>Karunya Institute of Technology and Sciences has been selected as Nodal Centre, Mumbai, to host the Grand Finale of Toycathon 2021. Toycathon 2021 is an inter-ministerial initiative organized by the Ministry of Education's Innovation Cell with support from multiple ministries.</p>
+        </div>
+    </div>
+
+    <!-- News Modal 2 -->
+    <div id="news-2" class="modal" role="dialog" aria-modal="true" aria-labelledby="news-2-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('news-2')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="news-2-title">Top 2% Scientists (Stanford University)</h2>
+            <p>Four faculty members of the Karunya Institute of Technology and Sciences (KITS), Coimbatore, have been featured in the top 2% of scientists listed by Stanford University, USA.</p>
+        </div>
+    </div>
+
+    <!-- News Modal 3 -->
+    <div id="news-3" class="modal" role="dialog" aria-modal="true" aria-labelledby="news-3-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('news-3')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="news-3-title">Selection Trials for Sports Quota 2024-25</h2>
+            <p>Sports quota selection trials for academic year 2024–2025 for various games, including athletics, are scheduled from 15th to 21st May 2024 in the institution sports complex.</p>
+        </div>
+    </div>
+
+    <!-- News Modal 4 -->
+    <div id="news-4" class="modal" role="dialog" aria-modal="true" aria-labelledby="news-4-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('news-4')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="news-4-title">Innovations in Online Teaching, Learning and Evaluation (IOTLE 2021)</h2>
+            <p>KITS is organizing a 3-day International Webinar titled "Innovations in Online Teaching, Learning and Evaluation" (IOTLE 2021) starting from 05 August 2021 for continuous improvement.</p>
+        </div>
+    </div>
+
+    <!-- News Modal 5 -->
+    <div id="news-5" class="modal" role="dialog" aria-modal="true" aria-labelledby="news-5-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('news-5')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="news-5-title">Make an awesome art portfolio for college or university</h2>
+            <p>Full details about the news go here. You can add more text or media inside this modal pop-up to display the full news content.</p>
+        </div>
+    </div>
+
+    <!-- News Modal 6 -->
+    <div id="news-6" class="modal" role="dialog" aria-modal="true" aria-labelledby="news-6-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('news-6')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="news-6-title">Make an awesome art portfolio for college or university</h2>
+            <p>Full details about the news go here. You can add more text or media inside this modal pop-up to display the full news content.</p>
+        </div>
+    </div>
+
+    <!-- Achiever Modal -->
+    <div id="achieverModal" class="modal form-modal" role="dialog" aria-modal="true" aria-labelledby="achieverModalTitle">
+        <div class="modal-content form-modal-content">
+            <button class="close" onclick="closeAchieverModal()" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="achieverModalTitle">Add Achiever</h2>
+            <form id="achieverForm" onsubmit="handleAchieverFormSubmit(event)" aria-labelledby="achieverModalTitle">
+                <input type="hidden" id="achieverId" value="">
+                
+                <div class="form-group">
+                    <label for="achieverName">Name *</label>
+                    <input type="text" id="achieverName" required placeholder="Enter achiever name">
+                </div>
+                
+                <div class="form-group">
+                    <label for="achieverYears">Years *</label>
+                    <input type="text" id="achieverYears" required placeholder="e.g., 1937 - 2024">
+                </div>
+                
+                <div class="form-group">
+                    <label for="achieverImage">Image *</label>
+                    <div class="image-input-group">
+                        <input type="text" id="achieverImage" required placeholder="Enter image URL or Browse a file" aria-required="true">
+                        <button type="button" class="browse-btn" id="browseAchieverImage" aria-label="Browse local image files">
+                            <i class="fas fa-folder-open" aria-hidden="true"></i> Browse
+                        </button>
+                    </div>
+                    <input type="file" id="achieverImageFile" accept="image/*" style="display:none;" aria-hidden="true">
+                </div>
+                
+                <div class="form-group">
+                    <label for="achieverDesc1">Description Paragraph 1 *</label>
+                    <textarea id="achieverDesc1" required rows="3" placeholder="First description paragraph"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="achieverDesc2">Description Paragraph 2 *</label>
+                    <textarea id="achieverDesc2" required rows="3" placeholder="Second description paragraph"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="achieverQuote">Quote *</label>
+                    <textarea id="achieverQuote" required rows="2" placeholder="A meaningful quote from the achiever"></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeAchieverModal()" aria-label="Cancel achiever form">Cancel</button>
+                    <button type="submit" class="submit-btn" aria-label="Save achiever information">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div id="aboutModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="about-modal-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('aboutModal')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="about-modal-title">About This Project</h2>
+            <p>Welcome to the Campus News and Blog Platform, your hub for all campus-related updates, stories, and discussions.</p>
+            <p>We aim to foster open communication, creativity, and knowledge sharing through blog posts, articles, and announcements.</p>
+            <p>Stay connected, stay informed, and be a part of the campus conversation!</p>
+        </div>
+    </div>
+
+    <!-- Design Item Modal -->
+    <div id="designModal" class="form-modal" role="dialog" aria-modal="true" aria-labelledby="designModalTitle">
+        <div class="form-modal-content">
+            <button class="close" onclick="closeDesignModal()" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="designModalTitle">Add New Announcement</h2>
+            <form id="designForm" onsubmit="handleDesignFormSubmit(event)" aria-labelledby="designModalTitle">
+                <input type="hidden" id="designItemId" value="">
+                <div class="form-group">
+                    <label for="designTitle">Title *</label>
+                    <input type="text" id="designTitle" required placeholder="Enter announcement title" aria-required="true">
+                </div>
+                <div class="form-group">
+                    <label for="designImageUrl">Image *</label>
+                    <div class="image-input-group">
+                        <input type="text" id="designImageUrl" required placeholder="Enter image URL or Browse a file" aria-required="true">
+                        <button type="button" class="browse-btn" id="browseDesignImage" aria-label="Browse local image files">
+                            <i class="fas fa-folder-open" aria-hidden="true"></i> Browse
+                        </button>
+                    </div>
+                    <input type="file" id="designImageFile" accept="image/*" style="display:none;" aria-hidden="true">
+                </div>
+                <div class="form-group">
+                    <label for="designCategory">Category *</label>
+                    <select id="designCategory" required aria-required="true">
+                        <option value="">Select category</option>
+                        <option value="Announcement">Announcement</option>
+                        <option value="Achievement">Achievement</option>
+                        <option value="Sports">Sports</option>
+                        <option value="News">News</option>
+                        <option value="Event">Event</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="designLikeCount">Initial Like Count</label>
+                    <input type="number" id="designLikeCount" min="0" value="0" placeholder="Enter initial like count">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeDesignModal()" aria-label="Cancel announcement form">Cancel</button>
+                    <button type="submit" class="submit-btn" aria-label="Save announcement">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Static Blog Item Modal -->
+    <div id="staticBlogModal" class="form-modal" role="dialog" aria-modal="true" aria-labelledby="staticBlogModalTitle">
+        <div class="form-modal-content">
+            <button class="close" onclick="closeStaticBlogModal()" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="staticBlogModalTitle">Add New Blog</h2>
+            <form id="staticBlogForm" onsubmit="handleStaticBlogFormSubmit(event)" aria-labelledby="staticBlogModalTitle">
+                <input type="hidden" id="staticBlogItemId" value="">
+                <div class="form-group">
+                    <label for="staticBlogTitle">Title *</label>
+                    <input type="text" id="staticBlogTitle" required placeholder="Enter blog title" aria-required="true">
+                </div>
+                <div class="form-group">
+                    <label for="staticBlogDescription">Short Description *</label>
+                    <input type="text" id="staticBlogDescription" required placeholder="Enter short description for card" aria-required="true">
+                </div>
+                <div class="form-group">
+                    <label for="staticBlogContent">Full Content *</label>
+                    <textarea id="staticBlogContent" required placeholder="Enter full content for Read More modal" rows="6" aria-required="true"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="staticBlogImageUrl">Image *</label>
+                    <div class="image-input-group">
+                        <input type="text" id="staticBlogImageUrl" required placeholder="Enter image URL or Browse a file" aria-required="true">
+                        <button type="button" class="browse-btn" id="browseStaticBlogImage" aria-label="Browse local image files">
+                            <i class="fas fa-folder-open" aria-hidden="true"></i> Browse
+                        </button>
+                    </div>
+                    <input type="file" id="staticBlogImageFile" accept="image/*" style="display:none;" aria-hidden="true">
+                </div>
+                <div class="form-group">
+                    <label for="staticBlogDate">Date *</label>
+                    <input type="text" id="staticBlogDate" required placeholder="Enter date (e.g., 20 January, 2020)" aria-required="true">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" onclick="closeStaticBlogModal()" aria-label="Cancel blog form">Cancel</button>
+                    <button type="submit" class="submit-btn" aria-label="Save blog post">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Read More Modal -->
+    <div id="readMoreModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="read-more-modal-title">
+        <div class="modal-content">
+            <button class="close" onclick="closeModal('readMoreModal')" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="readMoreTitle">Blog Title</h2>
+            <time id="readMoreDate">20 January, 2020</time>
+            <div id="readMoreContent">Full content goes here...</div>
+        </div>
+    </div>
+
+    <!-- End of Modals -->
+
+    <script src="scripts.js"></script>
+</body>
+
+</html>

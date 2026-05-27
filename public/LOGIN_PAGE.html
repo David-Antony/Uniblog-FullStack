@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        /* General styling */
+        :root {
+            --mx: 50%;
+            --my: 50%;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: radial-gradient(circle at var(--mx) var(--my), rgba(219,174,26,0.25), rgba(17,17,23,0.2) 32%, #0f1117 65%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+        .blob {
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08), rgba(255,255,255,0));
+            filter: blur(40px);
+            top: -120px;
+            right: -80px;
+            pointer-events: none;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 44px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+            border-radius: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-size: 16px;
+            margin-bottom: 8px;
+            text-align: left;
+            color: #666;
+        }
+
+        input[type="text"],
+        .password-wrap input[type="password"] {
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #f9f9f9;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            padding-right: 44px;
+        }
+
+        input[type="text"]:focus,
+        .password-wrap input[type="password"]:focus {
+            border-color: #dbae1a;
+            outline: none;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(219, 174, 26, 0.25);
+        }
+
+        .password-wrap{
+            position: relative;
+        }
+        .eye-btn{
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            color: #888;
+            font-size: 18px;
+            line-height: 1;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            transition: color 0.2s ease, background-color 0.2s ease;
+        }
+        .eye-btn:hover{
+            color: #dbae1a;
+            background-color: rgba(219, 174, 26, 0.1);
+        }
+        .eye-btn:active{
+            color: #dbae1a;
+        }
+
+        button {
+            padding: 15px;
+            font-size: 16px;
+            background-color: #111;
+            color: #ffffff;
+            border: none;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background-color: #dbae1a;
+            color: #111;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+        }
+
+        #error-message {
+            margin-top: 20px;
+            color: #ff4d4d;
+            font-size: 14px;
+        }
+
+        /* Styling for small screens */
+        @media (max-width: 600px) {
+            .container {
+                width: 90%;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="blob"></div>
+    <div class="container">
+        <h1>Login</h1>
+        <form id="loginForm" action="/login" method="POST">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password:</label>
+            <div class="password-wrap">
+                <input type="password" id="password" name="password" required>
+                <button type="button" class="eye-btn" id="togglePassword" aria-label="Show password">👁️</button>
+            </div>
+            <button type="submit" aria-label="Login to your account">Login</button>
+        </form>
+        <p id="error-message" style="color: red;"></p>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const errorMessage = document.getElementById('error-message');
+        const passwordInput = document.getElementById('password');
+        const togglePassword = document.getElementById('togglePassword');
+        let lockedVisible = false;
+
+        loginForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            errorMessage.textContent = "";
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('role', data.role);
+                    localStorage.setItem('username', data.username);
+                    window.location.href = "homepage.html";
+                } else {
+                    errorMessage.textContent = data.message || "Invalid username or password.";
+                }
+            } catch (err) {
+                console.error("Login error:", err);
+                errorMessage.textContent = "Server unreachable. Please try again.";
+            }
+        });
+
+        // interactive cursor glow
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+            document.documentElement.style.setProperty('--mx', `${x}%`);
+            document.documentElement.style.setProperty('--my', `${y}%`);
+        });
+
+        function applyVisibility(forceVisible) {
+            const show = forceVisible || lockedVisible;
+            passwordInput.type = show ? 'text' : 'password';
+        }
+        togglePassword.addEventListener('mousedown', () => applyVisibility(true));
+        togglePassword.addEventListener('mouseup', () => applyVisibility(false));
+        togglePassword.addEventListener('mouseleave', () => applyVisibility(false));
+        togglePassword.addEventListener('click', () => {
+            lockedVisible = !lockedVisible;
+            applyVisibility();
+        });
+    </script>
+</body>
+</html>
