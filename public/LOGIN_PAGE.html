@@ -2,8 +2,29 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login Page</title>
+    <meta name="description" content="UniBlog — Login to access the full-stack blog platform for university news, announcements, and student achievements.">
+    <meta name="keywords" content="university blog, student blog, college news, login, announcements, achievements">
+    <meta name="author" content="UniBlog">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="http://localhost:3001/LOGIN_PAGE.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:3001/LOGIN_PAGE.html">
+    <meta property="og:title" content="UniBlog — Login">
+    <meta property="og:description" content="Login to access the full-stack blog platform for university news, announcements, and student achievements.">
+    <meta property="og:image" content="http://localhost:3001/images/news-1.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="http://localhost:3001/LOGIN_PAGE.html">
+    <meta name="twitter:title" content="UniBlog — Login">
+    <meta name="twitter:description" content="Login to access the full-stack blog platform for university news, announcements, and student achievements.">
+    <meta name="twitter:image" content="http://localhost:3001/images/news-1.png">
+
+    <title>UniBlog — Login</title>
     <style>
         /* General styling */
         :root {
@@ -191,6 +212,7 @@
 
                 const data = await res.json();
                 if (data.success) {
+                    localStorage.setItem('token', data.token);
                     localStorage.setItem('role', data.role);
                     localStorage.setItem('username', data.username);
                     window.location.href = "homepage.html";
