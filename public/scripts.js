@@ -33,6 +33,8 @@ let designItemsCache = [];
 let staticBlogItemsCache = [];
 let achieversCache = [];
 let selectedCategories = new Set(DEFAULT_CATEGORIES);
+let currentPage = 1;
+const POSTS_PER_PAGE = 6;
 
 // ==================== Utility Functions ====================
 
@@ -65,6 +67,15 @@ function handleError(error, context = 'Operation', showAlert = true) {
         const userMessage = error.message || 'An unexpected error occurred. Please try again.';
         alert(`${context} failed: ${userMessage}`);
     }
+}
+
+// Calculate estimated read time from content (HTML or plain text)
+function calculateReadTime(content) {
+    if (!content) return 1;
+    // Strip HTML tags, count words, assume 200 words per minute
+    const text = content.replace(/<[^>]*>/g, '');
+    const wordCount = text.split(/\s+/).filter(w => w.length > 0).length;
+    return Math.max(1, Math.ceil(wordCount / 200));
 }
 
 // ==================== Shared Entity Helpers ====================
@@ -257,14 +268,24 @@ function getUsername() {
 
 // Check if a user is currently logged in
 function isAuthenticated() {
-    const role = getUserRole();
-    const username = getUsername();
-    return !!(role && username);
+    return !!(localStorage.getItem('token'));
 }
 
 // Check if the current user has admin privileges
 function isAdmin() {
     return getUserRole() === USER_ROLES.ADMIN;
+}
+
+// Decode JWT payload (client-side only — for display purposes)
+function decodeToken() {
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload;
+    } catch {
+        return null;
+    }
 }
 
 // Redirect to login page if not authenticated
@@ -307,6 +328,41 @@ function configureBlogLink() {
             window.location.href = "LOGIN_PAGE.html";
         });
     }
+}
+
+// ==================== Theme Toggle ====================
+
+// Apply theme and persist to localStorage
+function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
+    updateThemeIcon(theme);
+}
+
+// Toggle between light and dark
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+}
+
+// Update the theme toggle button icon
+function updateThemeIcon(theme) {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+    if (theme === 'dark') {
+        btn.innerHTML = '<i class="fas fa-sun"></i>';
+        btn.title = 'Switch to light mode';
+    } else {
+        btn.innerHTML = '<i class="fas fa-moon"></i>';
+        btn.title = 'Switch to dark mode';
+    }
+}
+
+// Initialize theme on page load
+function initTheme() {
+    const saved = localStorage.getItem('theme') || 'light';
+    applyTheme(saved);
 }
 
 // ==================== ID & Modal Helpers ====================
@@ -369,37 +425,68 @@ function formatContent(text) {
 
 // Build the headers object sent with every authenticated API request
 function getAuthHeaders() {
-    return {
-        'Content-Type': 'application/json',
-        'x-username': getUsername() || '',
-        'x-role': getUserRole() || ''
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json'
     };
+    if (token) {
+        headers['Authorization'] = 'Bearer ' + token;
+    }
+    // Keep legacy headers as fallback for backward compat
+    const username = getUsername();
+    const role = getUserRole();
+    if (username) headers['x-username'] = username;
+    if (role) headers['x-role'] = role;
+    return headers;
 }
 
 // ==================== Blog Posts CRUD ====================
 
 // Fetch all blog posts from the server and render them
-async function fetchPosts() {
-    console.log('🔄 Fetching posts from /posts...');
+async function fetchPosts(page = 1) {
+    console.log(`🔄 Fetching posts (page ${page})...`);
     const postsContainer = document.getElementById('blogContainer');
     
-    if (postsContainer) {
+    if (postsContainer && page === 1) {
         postsContainer.innerHTML = '<div class="loading">⏳ Loading latest posts...</div>';
     }
     
     try {
-        const res = await fetch(API_ENDPOINTS.POSTS);
+        const res = await fetch(`${API_ENDPOINTS.POSTS}?page=${page}&limit=${POSTS_PER_PAGE}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         
-        postsCache = await res.json();
+        const data = await res.json();
+        
+        // Handle both paginated response and raw array (backward compat)
+        if (data.items) {
+            postsCache = data.items;
+            currentPage = data.page;
+            renderPosts(postsCache);
+            renderPaginationControls(data.totalPages, data.page);
+            // Update stat counter if exists
+            const stat = document.getElementById('stat-posts');
+            if (stat) stat.textContent = data.totalItems;
+            // Fetch comment counts for each visible post
+            postsCache.forEach(async post => {
+                const count = await fetchCommentCount(idToString(post._id));
+                const badge = document.getElementById(`comment-count-${idToString(post._id)}`);
+                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${count} comments`;
+            });
+        } else if (Array.isArray(data)) {
+            postsCache = data;
+            renderPosts(postsCache);
+            // Fetch comment counts for each visible post
+            postsCache.forEach(async post => {
+                const count = await fetchCommentCount(idToString(post._id));
+                const badge = document.getElementById(`comment-count-${idToString(post._id)}`);
+                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${count} comments`;
+            });
+        }
+        
         console.log(`✅ Fetched ${postsCache.length} posts`);
-        
-        renderPosts(postsCache);
-        
-        const stat = document.getElementById('stat-posts');
-        if (stat) stat.textContent = postsCache.length || 0;
+        setupFilters();
     } catch (err) {
-        console.error("❌ Error fetching posts:", err);
+        handleError(err, 'Fetch posts');
         handleFetchError(postsContainer, 'posts');
     }
 }
@@ -459,6 +546,7 @@ function createPostElement(post) {
     const likeCount = post.likeCount || 0;
     const shareCount = post.shareCount || 0;
     const category = post.category || 'General';
+    const viewCount = post.viewCount || 0;
 
     // Admin-only action buttons
     const deleteButton = isAdmin()
@@ -468,12 +556,23 @@ function createPostElement(post) {
         ? `<button class="edit-btn" onclick="editPost('${postId}')"><i class="fas fa-edit"></i> Edit</button>`
         : '';
 
+    const postStats = `
+        <div class="post-stats">
+            <span class="post-stat"><i class="far fa-eye"></i> ${viewCount} views</span>
+            <span class="post-stat"><i class="far fa-clock"></i> ${calculateReadTime(post.content)} min read</span>
+            <span class="post-stat" id="comment-count-${postId}">
+                <i class="far fa-comment"></i> <span>...</span> comments
+            </span>
+        </div>
+    `;
+
     postElement.innerHTML = `
         <img src="${post.image}" alt="${sanitizeHTML(post.title)}" loading="lazy" />
         <div class="content">
             <span class="pill">${sanitizeHTML(category)}</span>
             <h3>${sanitizeHTML(post.title)}</h3>
             <p>${sanitizeHTML(post.description)}</p>
+            ${postStats}
             <div class="post-actions">
                 <button class="read-more-btn" onclick="openReadMoreModal('${postId}')">
                     <i class="fas fa-book-open"></i> Read More
@@ -606,6 +705,8 @@ function openReadMoreModal(postId) {
     const post = postsCache.find(p => idToString(p._id) === postId);
     if (!post) return;
 
+    window._currentPostId = postId;
+
     // Use the content field if available, otherwise fall back to description
     const content = post.content || post.description;
     
@@ -619,6 +720,16 @@ function openReadMoreModal(postId) {
                 <span class="close" onclick="closeModal('readMoreModal')">&times;</span>
                 <h2 id="readMoreTitle"></h2>
                 <div id="readMoreContent"></div>
+                <div class="comments-section">
+                    <h4><i class="fas fa-comments"></i> Comments</h4>
+                    <div id="comments-list"></div>
+                    <input type="hidden" id="comment-parent-id" value="">
+                    <div id="reply-indicator" style="display: none; padding: 0.3rem 0; color: var(--muted); font-size: var(--font-size-sm);"></div>
+                    <div class="comment-form">
+                        <textarea id="comment-body" placeholder="Write a comment..." rows="3"></textarea>
+                        <button class="btn-primary" onclick="submitComment(window._currentPostId)">Post Comment</button>
+                    </div>
+                </div>
             </div>
         `;
         document.body.appendChild(modal);
@@ -629,6 +740,68 @@ function openReadMoreModal(postId) {
     contentDiv.innerHTML = formatContent(content);
     
     modal.style.display = 'block';
+    
+    // Load comments section
+    loadComments(postId);
+}
+
+// ==================== Pagination Controls ====================
+
+function renderPaginationControls(totalPages, currentPage) {
+    let container = document.getElementById('pagination-controls');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'pagination-controls';
+        container.className = 'pagination-container';
+        const blogContainer = document.getElementById('blogContainer');
+        if (blogContainer && blogContainer.parentNode) {
+            blogContainer.parentNode.insertBefore(container, blogContainer.nextSibling);
+        }
+    }
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    let html = '<div class="pagination">';
+    
+    // Previous button
+    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" 
+        onclick="fetchPosts(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="fas fa-chevron-left"></i> Prev</button>`;
+    
+    // Page numbers
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) start = Math.max(1, end - maxVisible + 1);
+    
+    if (start > 1) {
+        html += `<button class="page-btn" onclick="fetchPosts(1)">1</button>`;
+        if (start > 2) html += '<span class="page-ellipsis">...</span>';
+    }
+    
+    for (let i = start; i <= end; i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" 
+            onclick="fetchPosts(${i})">${i}</button>`;
+    }
+    
+    if (end < totalPages) {
+        if (end < totalPages - 1) html += '<span class="page-ellipsis">...</span>';
+        html += `<button class="page-btn" onclick="fetchPosts(${totalPages})">${totalPages}</button>`;
+    }
+    
+    // Next button
+    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}" 
+        onclick="fetchPosts(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        Next <i class="fas fa-chevron-right"></i></button>`;
+    
+    html += '</div>';
+    container.innerHTML = html;
+    
+    // Scroll to top of posts
+    document.getElementById('blog')?.scrollIntoView({ behavior: 'smooth' });
 }
 
 // ==================== Design Items (Announcements) CRUD ====================
@@ -957,6 +1130,175 @@ function openStaticBlogReadMore(id) {
     openModal('readMoreModal');
 }
 
+// ==================== Comments ====================
+
+// Fetch all comments for a post
+async function fetchComments(postId) {
+    try {
+        const res = await fetch(`${API_ENDPOINTS.POSTS}/${postId}/comments`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.json();
+    } catch (err) {
+        console.error('❌ Error fetching comments:', err);
+        return [];
+    }
+}
+
+// Fetch comment count for a post (used on post cards)
+async function fetchCommentCount(postId) {
+    try {
+        const res = await fetch(`${API_ENDPOINTS.POSTS}/${postId}/comments/count`);
+        if (!res.ok) return 0;
+        const data = await res.json();
+        return data.count || 0;
+    } catch {
+        return 0;
+    }
+}
+
+// Render comments in a container
+function renderComments(comments, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    if (!comments || comments.length === 0) {
+        container.innerHTML = '<p class="no-comments">No comments yet. Be the first to comment!</p>';
+        return;
+    }
+    
+    // Build a map of comments by _id for nesting
+    const commentMap = {};
+    const topLevel = [];
+    
+    comments.forEach(c => {
+        const idStr = idToString(c._id);
+        commentMap[idStr] = { ...c, replies: [] };
+    });
+    
+    comments.forEach(c => {
+        const idStr = idToString(c._id);
+        if (c.parentId) {
+            const parentIdStr = idToString(c.parentId);
+            if (commentMap[parentIdStr]) {
+                commentMap[parentIdStr].replies.push(commentMap[idStr]);
+            } else {
+                topLevel.push(commentMap[idStr]);
+            }
+        } else {
+            topLevel.push(commentMap[idStr]);
+        }
+    });
+    
+    function renderComment(comment, level) {
+        const time = new Date(comment.createdAt).toLocaleString();
+        const isOwn = comment.author === getUsername();
+        const isAdminUser = isAdmin();
+        const canDelete = isOwn || isAdminUser;
+        
+        const indentClass = level > 0 ? 'comment-reply' : '';
+        const indentStyle = level > 0 ? `style="margin-left: ${Math.min(level, 3) * 2}rem;"` : '';
+        
+        return `
+            <div class="comment-item ${indentClass}" ${indentStyle}>
+                <div class="comment-header">
+                    <strong class="comment-author">${sanitizeHTML(comment.author)}</strong>
+                    <span class="comment-time">${time}</span>
+                    ${canDelete ? `<button class="comment-delete-btn" onclick="deleteComment('${idToString(comment._id)}', '${comment.postId}')" title="Delete comment"><i class="fas fa-trash-alt"></i></button>` : ''}
+                </div>
+                <div class="comment-body">${sanitizeHTML(comment.body)}</div>
+                <button class="comment-reply-btn" onclick="showReplyForm('${idToString(comment._id)}', '${comment.postId}')">
+                    <i class="fas fa-reply"></i> Reply
+                </button>
+                ${comment.replies && comment.replies.length > 0
+                    ? comment.replies.map(r => renderComment(r, level + 1)).join('')
+                    : ''}
+            </div>
+        `;
+    }
+    
+    container.innerHTML = topLevel.map(c => renderComment(c, 0)).join('');
+}
+
+// Submit a new comment
+async function submitComment(postId) {
+    const bodyInput = document.getElementById('comment-body');
+    const body = bodyInput ? bodyInput.value.trim() : '';
+    if (!body) {
+        alert('Please enter a comment.');
+        return;
+    }
+    
+    const replyTo = document.getElementById('comment-parent-id')?.value || null;
+    
+    try {
+        const res = await fetchWithRetry(`${API_ENDPOINTS.POSTS}/${postId}/comments`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ body, parentId: replyTo })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            bodyInput.value = '';
+            // Clear reply state
+            if (replyTo) {
+                document.getElementById('comment-parent-id').value = '';
+                document.getElementById('reply-indicator').style.display = 'none';
+            }
+            await loadComments(postId);
+        } else {
+            alert(`Failed: ${data.message || 'Unknown error'}`);
+        }
+    } catch (err) {
+        handleError(err, 'Submit comment');
+    }
+}
+
+// Show reply form for a specific comment
+function showReplyForm(commentId, postId) {
+    document.getElementById('comment-parent-id').value = commentId;
+    const indicator = document.getElementById('reply-indicator');
+    if (indicator) {
+        indicator.style.display = 'block';
+        indicator.innerHTML = `<i class="fas fa-reply"></i> Replying to comment <button onclick="cancelReply()" style="margin-left: 0.5rem; background: none; border: none; color: var(--danger); cursor: pointer;">✕ Cancel</button>`;
+    }
+    document.getElementById('comment-body')?.focus();
+}
+
+// Cancel reply
+function cancelReply() {
+    document.getElementById('comment-parent-id').value = '';
+    const indicator = document.getElementById('reply-indicator');
+    if (indicator) indicator.style.display = 'none';
+}
+
+// Delete a comment
+async function deleteComment(commentId, postId) {
+    if (!await showConfirmModal('Are you sure you want to delete this comment?')) return;
+    
+    try {
+        const res = await fetchWithRetry(`${API_ENDPOINTS.POSTS}/${postId}/comments/${commentId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            await loadComments(postId);
+        } else {
+            alert(`Failed: ${data.message || 'Unknown error'}`);
+        }
+    } catch (err) {
+        handleError(err, 'Delete comment');
+    }
+}
+
+// Load comments for a post (fetch + render)
+async function loadComments(postId) {
+    const comments = await fetchComments(postId);
+    renderComments(comments, 'comments-list');
+}
+
 // ==================== Search & Filter ====================
 
 // Filter posts by search query and selected category checkboxes
@@ -1268,6 +1610,7 @@ if (hamburgerBtn && navbarNav) {
 
 // Main initialization when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
+    initTheme();
     checkAuth();
     displayUsername();
     fetchAchievers();
