@@ -1,6 +1,6 @@
 # 🚀 Blog Website — Project Reference
 
-> **Quick Intro:** A full-stack blog platform where **Admins** publish & manage content (posts, announcements, achievers) and **Students** browse, like & share. Built with vanilla **HTML/CSS/JS** on the frontend and **Express.js + MongoDB** on the backend.
+> **Quick Intro:** A full-stack blog platform where **Admins** publish & manage content (posts, announcements, achievers) and **Students** browse, like, comment & share. Features JWT authentication, bcrypt password hashing, rich text editing, dark mode, pagination, Swagger API docs, and Docker support. Built with vanilla **HTML/CSS/JS** on the frontend and **Express.js + MongoDB** on the backend.
 
 ---
 
@@ -8,18 +8,28 @@
 
 ```
 blog-website/
-├── .gitignore              # Excludes .env, node_modules/, logs, IDE files, OS files, data/
-├── package.json            # Project metadata, scripts, dependencies
-├── package-lock.json       # Dependency lockfile
-├── server.js               # Express.js server (API routes, MongoDB, auth)
-├── PROJECT_REFERENCE.md    # ← THIS FILE
+├── .env.example              # Template for environment variables
+├── .gitignore                # Excludes .env, node_modules/, logs, IDE files, OS files, data/
+├── .dockerignore             # Files excluded from Docker build
+├── Dockerfile                # Docker container definition (Node 20 Alpine)
+├── docker-compose.yml        # Multi-container setup (app + MongoDB)
+├── jest.config.js            # Jest test configuration
+├── package.json              # Project metadata, scripts, dependencies
+├── package-lock.json         # Dependency lockfile
+├── server.js                 # Express.js server (API routes, MongoDB, auth)
+├── PROJECT_REFERENCE.md      # ← THIS FILE
+├── __tests__/
+│   ├── setup.js              # In-memory MongoDB test app builder
+│   └── api.test.js           # 15 API integration tests
 └── public/
-    ├── homepage.html       # Main page: blog grid, announcements, achievers carousel
-    ├── blog.html           # Admin-only blog post editor (create/edit posts)
-    ├── LOGIN_PAGE.html     # Login form (admin / student)
-    ├── logout.html         # Clears auth data on logout
-    ├── scripts.js          # All frontend logic (~1300 lines)
-    ├── style.css           # All styles, animations, responsive layout
+    ├── homepage.html         # Main page: blog grid, announcements, achievers carousel
+    ├── blog.html             # Admin-only blog post editor (create/edit posts)
+    ├── LOGIN_PAGE.html       # Login form (admin / student)
+    ├── logout.html           # Clears auth data on logout
+    ├── robots.txt            # Search engine crawl rules
+    ├── sitemap.xml           # Site URL map for SEO
+    ├── scripts.js            # All frontend logic (~1300 lines)
+    ├── style.css             # All styles, animations, responsive layout
     └── images/
         ├── news-1.png
         ├── news-2.png
@@ -40,18 +50,18 @@ blog-website/
 │   JS Client) │      JSON Responses       │  (server.js) │      Results       │ Collections: │
 │              │                           │              │                    │ • posts      │
 │ Auth:        │                           │ Auth Check:  │                    │ • designItems│
-│ localStorage │                           │ x-username   │                    │ • staticBlog │
-│ (username,   │                           │ x-role       │                    │   Items      │
-│  role)       │                           │ header       │                    │ • achievers  │
+│ localStorage │                           │ JWT Token    │                    │ • staticBlog │
+│ (JWT,        │                           │ (Bearer)     │                    │   Items      │
+│  role)       │                           │              │                    │ • achievers  │
 └──────────────┘                           └──────────────┘                    └──────────────┘
 ```
 
 **Flow:**
 1. User logs in → [`LOGIN_PAGE.html`](public/LOGIN_PAGE.html) sends credentials to `/api/login`
-2. Server validates → returns `{ username, role }` → stored in `localStorage`
-3. Every API request includes `x-username` and `x-role` headers for auth
-4. **Admin** can create/edit/delete any content; **Student** can only read, like & share
-5. Frontend fetches data from 4 API endpoints and renders dynamically
+2. Server validates with bcrypt → returns `{ username, role, token }` → JWT stored in `localStorage`
+3. Every API request includes `Authorization: Bearer <token>` header for auth
+4. **Admin** can create/edit/delete any content; **Student** can only read, like, comment & share
+5. Frontend fetches data from API endpoints and renders dynamically
 
 ---
 
@@ -72,11 +82,16 @@ blog-website/
 |---|---|
 | **Node.js** | JavaScript runtime — runs the server |
 | **Express.js v5** | Web framework — routing, middleware, static file serving |
-| **MongoDB v6** | NoSQL database — stores all content |
+| **MongoDB v7** | NoSQL database — stores all content |
 | **MongoDB Native Driver** | Direct MongoDB connection (no Mongoose ODM) |
 | **body-parser** | Parses JSON request bodies (up to 50MB for Base64 images) |
 | **express-rate-limit** | Rate limiting — 100 requests per 15 minutes per IP |
 | **dotenv** | Loads environment variables from `.env` file |
+| **bcrypt** | Password hashing (10 salt rounds) |
+| **jsonwebtoken (JWT)** | Token-based authentication with 24h expiry |
+| **helmet** | HTTP security headers (CSP, X-Frame-Options, etc.) |
+| **cors** | Cross-Origin Resource Sharing |
+| **swagger-jsdoc + swagger-ui-express** | Auto-generated interactive API docs at `/api-docs` |
 
 ### Database
 
@@ -85,7 +100,7 @@ blog-website/
 | **Database** | MongoDB |
 | **Database Name** | `blogDB` |
 | **Collections** | `posts`, `designItems`, `staticBlogItems`, `achievers` |
-| **Indexes** | `posts.createdAt` (descending), `posts.category` |
+| **Indexes** | `posts.createdAt` (descending), `posts.category`, `posts.viewCount` (descending), `posts.likeCount` (descending), `posts.commentCount` (descending) |
 | **Connection** | `mongodb://localhost:27017/blogDB` (configurable via `MONGO_URI` in `.env`) |
 
 ### Frontend (No Frameworks — Pure Vanilla)
@@ -100,6 +115,15 @@ blog-website/
 | **CSS Media Queries** | Responsive design — mobile, tablet, desktop breakpoints |
 | **Font Awesome** | Icons (heart, share, edit, delete, plus, search, etc.) |
 | **Google Fonts** | Typography (loaded via CDN in HTML `<head>`) |
+| **Quill.js** | Rich text editor (WYSIWYG) for blog content |
+
+### Testing
+
+| Technology | Purpose |
+|---|---|
+| **Jest** | JavaScript test runner |
+| **Supertest** | HTTP assertion library for API testing |
+| **mongodb-memory-server** | In-memory MongoDB instance for tests |
 
 ### APIs & Endpoints
 
@@ -114,6 +138,12 @@ blog-website/
 | `DELETE` | `/posts/:id` | Admin | Delete post |
 | `POST` | `/posts/:id/like` | Auth | Toggle like/unlike |
 | `POST` | `/posts/:id/share` | None | Increment share count |
+| `POST` | `/posts/:postId/comments` | Auth | Add comment |
+| `GET` | `/posts/:postId/comments` | None | Get all comments for a post |
+| `GET` | `/posts/:postId/comments/count` | None | Get comment count |
+| `DELETE` | `/posts/:postId/comments/:id` | Auth | Delete comment |
+| `GET` | `/posts/popular` | None | Top 5 posts by view count |
+| `GET` | `/api-docs` | None | Swagger UI |
 | `GET` | `/design-items` | None | Fetch all announcements |
 | `POST` | `/design-items` | Admin | Create announcement |
 | `PUT` | `/design-items/:id` | Admin | Update announcement |
@@ -135,15 +165,15 @@ blog-website/
 | Role | Credentials (default) | Permissions |
 |---|---|---|
 | **Admin** | `admin` / `admin123` | Full CRUD on all content, access to blog editor, see admin UI buttons |
-| **Student** | `student` / `student123` | Read-only, like posts & announcements, share posts |
+| **Student** | `student` / `student123` | Read-only, like posts & announcements, comment on posts, share posts |
 
-> ⚠️ **Production Note:** Credentials are stored in `.env` (never pushed to GitHub). For real production, use **bcrypt** password hashing and **JWT** tokens instead of plain-text comparison and HTTP headers.
+> 🔐 Passwords are hashed with **bcrypt** (10 salt rounds). Authentication uses **JWT tokens** with 24-hour expiry. API routes are protected via `verifyToken` middleware.
 
 **Auth Flow:**
-- Login → credentials checked against `.env` values
-- Success → `{ username, role }` stored in `localStorage`
-- Every API call includes `x-username` and `x-role` headers
-- Backend middleware checks headers for admin-only routes
+- Login → credentials checked with bcrypt against `.env` values
+- Success → `{ username, role, token }` returned (JWT with 24h expiry)
+- JWT stored in `localStorage`, sent as `Authorization: Bearer <token>` header
+- Backend `verifyToken` middleware validates the token on protected routes
 
 ---
 
@@ -159,6 +189,7 @@ blog-website/
 | **Page Loader** | Overlay div that fades out after 500ms on page load | Homepage |
 | **Transition Delays** | Staggered `transitionDelay` per card (`index * 60ms`) | Scroll-revealed cards |
 | **Button Loading Spinner** | Font Awesome spinner icon + disabled state during API calls | Like buttons, share buttons |
+| **Dark Mode Transition** | Smooth `background-color` + `color` transition on theme switch (0.3s) | Theme toggle |
 
 ### Interactions
 | Feature | Description |
@@ -176,6 +207,12 @@ blog-website/
 | **Image Upload** | "Browse" button → FileReader → Base64 conversion → auto-fills URL field |
 | **Image Validation** | Accepts URLs, relative paths (`images/...`), and Base64 data URIs |
 | **5MB Upload Limit** | Client-side file size check before Base64 conversion |
+| **Rich Text Editor** | Quill.js WYSIWYG editor with bold, italic, underline, headings, lists, links, images |
+| **Nested Comments** | Reply to specific comments, threaded display |
+| **Pagination Controls** | Page numbers with Previous/Next, ellipsis for large page counts |
+| **Dark Mode Toggle** | Sun/Moon icon button in navbar, persists across sessions |
+| **View Count** | Tracks and displays how many times each post has been read |
+| **Read Time** | Estimated reading time based on word count (200 wpm) |
 
 ### Responsive Design
 | Breakpoint | Behavior |
@@ -194,7 +231,9 @@ blog-website/
 | **CRUD Route Factory** | `createCrudRoutes()` function generates all 5 HTTP routes per collection from a single config object |
 | **Like Route Factory** | `addLikeRoute()` generates like/unlike toggle endpoint for any collection with `likedBy[]` + `likeCount` |
 | **Response Helpers** | `sendOk()` / `sendError()` — standardized JSON `{ success, ...data }` format |
-| **Auth Middleware** | `isAdmin(headers)` / `isAuthenticated(headers)` check `x-role` header |
+| **JWT Middleware** | `verifyToken()` — validates Bearer token or legacy headers |
+| **Security Headers** | Helmet sets 11+ security headers automatically |
+| **Auth Middleware** | `isAdmin(headers)` / `isAuthenticated(headers)` check JWT or `x-role` header |
 | **Rate Limiting** | Applied to `/api/*` routes — 100 req/15min per IP |
 | **Environment Config** | All secrets in `.env` via `dotenv`; defaults in code for local dev |
 
@@ -209,6 +248,9 @@ blog-website/
 | **XSS Sanitization** | `sanitizeHTML()` — renders user content as text (not HTML) to prevent injection |
 | **Component Rendering** | Each entity has `createXElement()` + `renderXItems()` + `fetchXItems()` pattern |
 | **State Caching** | All fetched data stored in `postsCache`, `designItemsCache`, `staticBlogItemsCache`, `achieversCache` |
+| **Dark Mode** | CSS custom properties swap via `[data-theme="dark"]`, localStorage persistence |
+| **Comment Threading** | Nested comment tree with parent/child relationships |
+| **Pagination** | Server-side pagination with page number controls, ellipsis |
 
 ---
 
@@ -218,7 +260,9 @@ blog-website/
 |---|---|
 | `npm start` | Runs `node server.js` — starts the production server |
 | `npm run dev` | Runs `nodemon server.js` — auto-restart on file changes |
-| `npm test` | Placeholder — no tests configured yet |
+| `npm test` | Runs all 15 Jest API integration tests |
+| `npm run docker:up` | Starts app + MongoDB via Docker Compose |
+| `npm run docker:down` | Stops Docker containers |
 
 ---
 
@@ -233,6 +277,39 @@ blog-website/
 | **Admin-Only Routes** | Backend checks `x-role: admin` header on all POST/PUT/DELETE |
 | **Body Size Limit** | 50MB JSON limit (for Base64 images) |
 | **No Secrets in Frontend** | Credentials only in server-side `.env` and `server.js` |
+| **bcrypt Hashing** | Passwords hashed with bcrypt (10 rounds) — never stored in plain text |
+| **JWT Tokens** | Tamper-proof authentication tokens with expiry |
+| **Helmet.js** | 11+ HTTP security headers (CSP, X-Content-Type, etc.) |
+| **Input Validation** | Server-side required field validation on all POST/PUT routes |
+
+---
+
+## 🐳 Docker Support
+
+| File | Purpose |
+|---|---|
+| [`Dockerfile`](Dockerfile) | Node.js 20 Alpine image, production dependencies only |
+| [`docker-compose.yml`](docker-compose.yml) | Two services: `app` (Express) + `mongo` (MongoDB 7 with healthcheck and persistent volume) |
+| [`.dockerignore`](.dockerignore) | Excludes node_modules, .git, .env, tests, logs |
+
+One-command startup: `docker compose up --build`
+
+---
+
+## 🧪 Testing
+
+The project includes 15 automated API tests using **Jest** + **Supertest** with an in-memory MongoDB database. Tests cover:
+
+| Category | Tests |
+|---|---|
+| Health Check | Server + DB connectivity |
+| Authentication | Login (valid, wrong password, missing fields), JWT token generation |
+| Authorization | Admin-only CRUD (403), unauthenticated requests (401) |
+| Posts CRUD | Create, Read (single + paginated), Update, Delete |
+| Likes | Toggle like/unlike, like count tracking |
+| Comments | Add comment, get comments |
+
+Run tests: `npm test`
 
 ---
 
@@ -247,6 +324,7 @@ npm install
 #    ADMIN_PASSWORD=your_admin_password
 #    STUDENT_PASSWORD=your_student_password
 #    PORT=3001
+#    JWT_SECRET=your_jwt_secret
 
 # 3. Start MongoDB (must be running locally)
 mongod
@@ -257,6 +335,9 @@ npm start
 # 5. Open in browser
 #    Login:    http://localhost:3001
 #    Homepage: http://localhost:3001/homepage.html
+
+# OR — Using Docker (no MongoDB install needed):
+docker compose up --build
 ```
 
 ---
@@ -275,6 +356,18 @@ npm start
   "likeCount": "Number",
   "likedBy": ["String (username)"],
   "shareCount": "Number",
+  "viewCount": "Number",
+  "readTime": "String",
+  "comments": [
+    {
+      "_id": "ObjectId",
+      "username": "String",
+      "text": "String",
+      "parentId": "ObjectId (null for top-level)",
+      "createdAt": "Date"
+    }
+  ],
+  "commentCount": "Number",
   "createdAt": "Date",
   "updatedAt": "Date"
 }
@@ -349,6 +442,13 @@ npm start
 | **Web Share API** | Browser-native sharing (mobile share sheet) — fallback to clipboard copy |
 | **FileReader API** | Reads files selected via `<input type="file">` — converts to Base64 |
 | **Exponential Backoff** | Retry strategy — wait 1s, 2s, 4s between retries on failure |
+| **JWT** | JSON Web Token — signed, tamper-proof authentication token |
+| **bcrypt** | Password hashing algorithm — makes stored passwords unreadable |
+| **Helmet** | Express middleware that sets HTTP security headers |
+| **Swagger/OpenAPI** | API documentation standard — interactive docs at `/api-docs` |
+| **Quill** | Rich text/WYSIWYG editor library |
+| **Pagination** | Splitting large data sets into pages (e.g., page 1 of 5) |
+| **Docker** | Container platform — packages app + dependencies into an isolated unit |
 
 ---
 
