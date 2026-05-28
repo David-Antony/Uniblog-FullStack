@@ -5,6 +5,12 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
 const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const cors = require('cors');
+const swaggerJsdoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
 
 // ==================== Configuration & Constants ====================
 
@@ -12,6 +18,8 @@ const app = express();
 const port = process.env.PORT || 3001;
 const uri = process.env.MONGO_URI || 'mongodb://localhost:27017/blogDB';
 const DB_NAME = 'blogDB';
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+const JWT_EXPIRY = '24h';
 
 // HTTP Status Codes
 const HTTP_STATUS = {
@@ -24,11 +32,53 @@ const HTTP_STATUS = {
     INTERNAL_SERVER_ERROR: 500
 };
 
-// Valid user credentials (loaded from environment variables for security)
-const VALID_CREDENTIALS = {
-    'admin': { password: process.env.ADMIN_PASSWORD || 'admin123', role: 'admin' },
-    'student': { password: process.env.STUDENT_PASSWORD || 'student123', role: 'student' }
+// Pre-hashed passwords using bcrypt (10 salt rounds)
+// Generated at startup via hashPasswords() below
+const VALID_USERS = {
+    'admin': { passwordHash: '', role: 'admin' },
+    'student': { passwordHash: '', role: 'student' }
 };
+
+function hashPasswords() {
+    const saltRounds = 10;
+    const adminPwd = process.env.ADMIN_PASSWORD || 'admin123';
+    const studentPwd = process.env.STUDENT_PASSWORD || 'student123';
+    VALID_USERS['admin'].passwordHash = bcrypt.hashSync(adminPwd, saltRounds);
+    VALID_USERS['student'].passwordHash = bcrypt.hashSync(studentPwd, saltRounds);
+    console.log('🔐 User password hashes generated');
+}
+
+function generateToken(user) {
+    return jwt.sign(
+        { username: user.username, role: user.role },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRY }
+    );
+}
+
+function verifyToken(req, res, next) {
+    // Support both Bearer token AND legacy x-headers for backward compatibility
+    const authHeader = req.headers['authorization'];
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+            const decoded = jwt.verify(token, JWT_SECRET);
+            req.user = { username: decoded.username, role: decoded.role };
+            return next();
+        } catch (err) {
+            return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid or expired token');
+        }
+    }
+    
+    // Fallback to legacy x-username/x-role headers for backward compatibility
+    if (req.headers['x-username'] && req.headers['x-role']) {
+        req.user = { username: req.headers['x-username'], role: req.headers['x-role'] };
+        return next();
+    }
+    
+    return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Authentication required');
+}
 
 // ==================== MongoDB Connection ====================
 
@@ -66,13 +116,33 @@ function sendOk(res, code, data = {}) {
 
 // ==================== Auth Helpers ====================
 
-function isAdmin(headers) { return headers['x-role'] === 'admin'; }
-function isAuthenticated(headers) { return headers['x-role'] === 'student' || headers['x-role'] === 'admin'; }
+function isAdmin(req) { return req.user && req.user.role === 'admin'; }
+function isAuthenticated(req) { return !!req.user; }
 
 // ==================== Middleware ====================
 
 app.use(bodyParser.json({ limit: '50mb' }));  // Large limit for Base64 images
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Security headers with CSP
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://use.fontawesome.com", "https://cdn.quilljs.com"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://use.fontawesome.com", "https://fonts.googleapis.com", "https://cdn.quilljs.com"],
+            fontSrc: ["'self'", "https://cdnjs.cloudflare.com", "https://use.fontawesome.com", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"],
+        },
+    },
+}));
+
+// CORS — allow cross-origin requests with custom headers
+app.use(cors({
+    origin: '*',
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-username', 'x-role'],
+}));
 
 // Rate limiting — 100 requests per 15 minutes per IP
 const apiLimiter = rateLimit({
@@ -84,6 +154,34 @@ const apiLimiter = rateLimit({
 });
 app.use('/api', apiLimiter);
 
+// ==================== Swagger/OpenAPI ====================
+
+const swaggerDefinition = {
+    openapi: '3.0.0',
+    info: {
+        title: 'UniBlog API',
+        version: '1.0.0',
+        description: 'REST API for the UniBlog full-stack blog platform. Supports blog posts, design items (announcements), static blog items, achievers, and comments.'
+    },
+    servers: [{ url: `http://localhost:${port}`, description: 'Development server' }],
+    components: {
+        securitySchemes: {
+            bearerAuth: {
+                type: 'http',
+                scheme: 'bearer',
+                bearerFormat: 'JWT'
+            }
+        }
+    }
+};
+
+const swaggerOptions = {
+    swaggerDefinition,
+    apis: ['./server.js']
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
 // ==================== CRUD Route Factory ====================
 
 // Generic CRUD route builder for a MongoDB collection
@@ -94,34 +192,56 @@ function createCrudRoutes(config) {
     const notFoundMsg = `${label} not found`;
     const logLabel = label.toLowerCase();
 
-    // GET all
+    // GET all with pagination
     app.get(basePath, async (req, res) => {
         try {
-            const items = await col().find().sort({ createdAt: -1 }).toArray();
-            console.log(`📋 Fetched ${items.length} ${logLabel}s`);
-            res.json(items);
+            const page = Math.max(1, parseInt(req.query.page) || 1);
+            const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 6));
+            const skip = (page - 1) * limit;
+            
+            const [items, totalItems] = await Promise.all([
+                col().find().sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+                col().countDocuments()
+            ]);
+            
+            const totalPages = Math.ceil(totalItems / limit);
+            console.log(`📋 Fetched ${items.length} ${logLabel}s (page ${page}/${totalPages})`);
+            
+            res.json({
+                page,
+                limit,
+                totalPages,
+                totalItems,
+                items
+            });
         } catch (err) {
             console.error(`❌ Error fetching ${logLabel}s:`, err);
             sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
         }
     });
 
-    // GET by ID
+    // GET by ID (with view count increment for posts)
     app.get(`${basePath}/:id`, async (req, res) => {
         try {
             const item = await col().findOne({ _id: new ObjectId(req.params.id) });
             if (!item) return sendError(res, HTTP_STATUS.NOT_FOUND, notFoundMsg);
+            
+            // Increment view count (non-blocking)
+            col().updateOne(
+                { _id: new ObjectId(req.params.id) },
+                { $inc: { viewCount: 1 } }
+            ).catch(err => console.error(`Error incrementing view count:`, err));
+            
             res.json(item);
         } catch (err) {
-            console.error(`❌ Error fetching ${logLabel}:`, err);
             sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
         }
     });
 
     // POST (create) — admin only
-    app.post(basePath, async (req, res) => {
+    app.post(basePath, verifyToken, async (req, res) => {
         try {
-            if (!isAdmin(req.headers)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+            if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
 
             const missing = requiredFields.filter(f => !req.body[f]);
             if (missing.length) return sendError(res, HTTP_STATUS.BAD_REQUEST, `Required fields missing: ${missing.join(', ')}`);
@@ -137,9 +257,9 @@ function createCrudRoutes(config) {
     });
 
     // PUT (update) — admin only
-    app.put(`${basePath}/:id`, async (req, res) => {
+    app.put(`${basePath}/:id`, verifyToken, async (req, res) => {
         try {
-            if (!isAdmin(req.headers)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+            if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
 
             const missing = requiredFields.filter(f => !req.body[f]);
             if (missing.length) return sendError(res, HTTP_STATUS.BAD_REQUEST, `Required fields missing: ${missing.join(', ')}`);
@@ -163,9 +283,9 @@ function createCrudRoutes(config) {
     });
 
     // DELETE — admin only
-    app.delete(`${basePath}/:id`, async (req, res) => {
+    app.delete(`${basePath}/:id`, verifyToken, async (req, res) => {
         try {
-            if (!isAdmin(req.headers)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+            if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
 
             const result = await col().deleteOne({ _id: new ObjectId(req.params.id) });
             if (result.deletedCount === 0) return sendError(res, HTTP_STATUS.NOT_FOUND, notFoundMsg);
@@ -185,11 +305,10 @@ function createCrudRoutes(config) {
 // ==================== Like Toggle Helper ====================
 
 function addLikeRoute(app, basePath, collection, label, col) {
-    app.post(`${basePath}/:id/like`, async (req, res) => {
+    app.post(`${basePath}/:id/like`, verifyToken, async (req, res) => {
         try {
-            const username = req.headers['x-username'];
+            const username = req.user.username;
             if (!username) return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Username is required');
-            if (!isAuthenticated(req.headers)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Authentication required');
 
             const item = await col().findOne({ _id: new ObjectId(req.params.id) });
             if (!item) return sendError(res, HTTP_STATUS.NOT_FOUND, `${label} not found`);
@@ -216,11 +335,96 @@ function addLikeRoute(app, basePath, collection, label, col) {
 
 // ==================== Health Check ====================
 
+/**
+ * @swagger
+ * /api/health:
+ *   get:
+ *     summary: Health check
+ *     tags: [System]
+ *     responses:
+ *       200:
+ *         description: Server is healthy
+ */
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', dbConnected: !!db, timestamp: new Date().toISOString() });
 });
 
 // ==================== Blog Posts (with like + share) ====================
+
+/**
+ * @swagger
+ * /posts:
+ *   get:
+ *     summary: Get all blog posts (paginated)
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: Paginated list of posts
+ *   post:
+ *     summary: Create a new blog post (Admin only)
+ *     tags: [Posts]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       201:
+ *         description: Post created
+ *       403:
+ *         description: Unauthorized
+ * /posts/{id}:
+ *   get:
+ *     summary: Get a single post by ID
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Post details
+ *   put:
+ *     summary: Update a post (Admin only)
+ *     tags: [Posts]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Post updated
+ *   delete:
+ *     summary: Delete a post (Admin only)
+ *     tags: [Posts]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Post deleted
+ * /posts/{id}/like:
+ *   post:
+ *     summary: Toggle like on a post
+ *     tags: [Posts]
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Like toggled
+ * /posts/{id}/share:
+ *   post:
+ *     summary: Record a share event
+ *     tags: [Posts]
+ *     responses:
+ *       200:
+ *         description: Share recorded
+ * /posts/popular:
+ *   get:
+ *     summary: Get most viewed posts
+ *     tags: [Posts]
+ *     responses:
+ *       200:
+ *         description: Top 5 posts by view count
+ */
 
 createCrudRoutes({
     path: '/posts',
@@ -235,7 +439,8 @@ createCrudRoutes({
         category: body.category || 'General',
         likeCount: 0,
         likedBy: [],
-        shareCount: 0
+        shareCount: 0,
+        viewCount: 0
     }),
     buildUpdate: (body) => {
         const data = {
@@ -267,7 +472,47 @@ createCrudRoutes({
     }
 });
 
+// Popular posts by view count
+app.get('/posts/popular', async (req, res) => {
+    try {
+        const posts = await db.collection('posts')
+            .find()
+            .sort({ viewCount: -1 })
+            .limit(5)
+            .toArray();
+        res.json(posts);
+    } catch (err) {
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
 // ==================== Design Items (Announcements, with like) ====================
+
+/**
+ * @swagger
+ * /design-items:
+ *   get:
+ *     summary: Get all design items (paginated)
+ *     tags: [Design Items]
+ *   post:
+ *     summary: Create a design item (Admin only)
+ *     tags: [Design Items]
+ *     security: [{ bearerAuth: [] }]
+ * /design-items/{id}:
+ *   put:
+ *     summary: Update a design item (Admin only)
+ *     tags: [Design Items]
+ *     security: [{ bearerAuth: [] }]
+ *   delete:
+ *     summary: Delete a design item (Admin only)
+ *     tags: [Design Items]
+ *     security: [{ bearerAuth: [] }]
+ * /design-items/{id}/like:
+ *   post:
+ *     summary: Toggle like on a design item
+ *     tags: [Design Items]
+ *     security: [{ bearerAuth: [] }]
+ */
 
 createCrudRoutes({
     path: '/design-items',
@@ -339,22 +584,133 @@ createCrudRoutes({
     })
 });
 
+// ==================== Comments Routes ====================
+
+const commentsCol = () => db.collection('comments');
+
+// GET all comments for a specific post (sorted oldest-first for threading)
+app.get('/posts/:postId/comments', async (req, res) => {
+    try {
+        const comments = await commentsCol()
+            .find({ postId: req.params.postId })
+            .sort({ createdAt: 1 })
+            .toArray();
+        res.json(comments);
+    } catch (err) {
+        console.error('❌ Error fetching comments:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+// GET comment count for a post
+app.get('/posts/:postId/comments/count', async (req, res) => {
+    try {
+        const count = await commentsCol().countDocuments({ postId: req.params.postId });
+        res.json({ count });
+    } catch (err) {
+        console.error('❌ Error counting comments:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+// POST a new comment (authenticated users only)
+app.post('/posts/:postId/comments', verifyToken, async (req, res) => {
+    try {
+        const { body, parentId } = req.body;
+        if (!body || !body.trim()) {
+            return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Comment body is required');
+        }
+        
+        const comment = {
+            postId: req.params.postId,
+            author: req.user.username,
+            body: body.trim(),
+            parentId: parentId || null,
+            createdAt: new Date()
+        };
+        
+        const result = await commentsCol().insertOne(comment);
+        console.log(`💬 Comment added by ${req.user.username} on post ${req.params.postId}`);
+        sendOk(res, HTTP_STATUS.CREATED, { id: result.insertedId, comment });
+    } catch (err) {
+        console.error('❌ Error adding comment:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+// DELETE a comment (admin or comment author)
+app.delete('/posts/:postId/comments/:id', verifyToken, async (req, res) => {
+    try {
+        const comment = await commentsCol().findOne({ _id: new ObjectId(req.params.id) });
+        if (!comment) return sendError(res, HTTP_STATUS.NOT_FOUND, 'Comment not found');
+        
+        // Only admin or the comment's author can delete
+        if (!isAdmin(req) && req.user.username !== comment.author) {
+            return sendError(res, HTTP_STATUS.FORBIDDEN, 'You can only delete your own comments');
+        }
+        
+        await commentsCol().deleteOne({ _id: new ObjectId(req.params.id) });
+        console.log(`🗑️ Comment deleted by ${req.user.username}`);
+        sendOk(res, HTTP_STATUS.OK);
+    } catch (err) {
+        console.error('❌ Error deleting comment:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
 // ==================== Authentication ====================
 
-// Note: For production, use bcrypt hashing and JWT-based auth
+/**
+ * @swagger
+ * /api/login:
+ *   post:
+ *     summary: User login
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [username, password]
+ *             properties:
+ *               username: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       200:
+ *         description: JWT token returned
+ *       401:
+ *         description: Invalid credentials
+ */
 app.post('/api/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        const user = VALID_CREDENTIALS[username];
-        if (!user || user.password !== password) {
+        if (!username || !password) {
+            return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Username and password are required');
+        }
+        
+        const user = VALID_USERS[username];
+        if (!user) {
             return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid credentials');
         }
-        sendOk(res, HTTP_STATUS.OK, { username, role: user.role });
+        
+        const match = await bcrypt.compare(password, user.passwordHash);
+        if (!match) {
+            return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid credentials');
+        }
+        
+        const token = generateToken({ username, role: user.role });
+        console.log(`🔑 User logged in: ${username} (${user.role})`);
+        sendOk(res, HTTP_STATUS.OK, { token, username, role: user.role });
     } catch (err) {
         console.error('❌ Login error:', err);
         sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
     }
 });
+
+// ==================== Swagger UI ====================
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // ==================== Static Routes ====================
 
@@ -364,13 +720,15 @@ app.get('/homepage.html', (req, res) => res.sendFile(path.join(__dirname, 'publi
 // ==================== Server Start ====================
 
 async function startServer() {
+    hashPasswords();
     await connectDB();
     app.listen(port, () => {
         console.log(`\n🚀 Blog Server running at: http://localhost:${port}`);
         console.log('   Homepage: http://localhost:' + port + '/homepage.html');
         console.log('   Add Post: http://localhost:' + port + '/blog.html');
         console.log('   Login:    http://localhost:' + port + '/LOGIN_PAGE.html');
-        console.log('   Health:   http://localhost:' + port + '/api/health\n');
+        console.log('   Health:   http://localhost:' + port + '/api/health');
+        console.log('   API Docs: http://localhost:' + port + '/api-docs\n');
     });
 }
 
