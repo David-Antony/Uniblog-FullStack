@@ -5,8 +5,27 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="Campus News and Blog Platform - Stay updated with the latest campus news, announcements, and design blog posts.">
-    <title>Campus News and Blog Platform</title>
+    <meta name="description" content="UniBlog — A full-stack blog platform for university news, announcements, and student achievements. Built with Express.js, MongoDB, and vanilla JavaScript.">
+    <meta name="keywords" content="university blog, student blog, college news, announcements, achievements">
+    <meta name="author" content="UniBlog">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="http://localhost:3001/homepage.html">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="http://localhost:3001/homepage.html">
+    <meta property="og:title" content="UniBlog — Home">
+    <meta property="og:description" content="A full-stack blog platform for university news, announcements, and student achievements.">
+    <meta property="og:image" content="http://localhost:3001/images/news-1.png">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="http://localhost:3001/homepage.html">
+    <meta name="twitter:title" content="UniBlog — Home">
+    <meta name="twitter:description" content="A full-stack blog platform for university news, announcements, and student achievements.">
+    <meta name="twitter:image" content="http://localhost:3001/images/news-1.png">
+
+    <title>UniBlog — Home</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin="anonymous" />
     <link rel="stylesheet" href="style.css">
 </head>
@@ -37,6 +56,9 @@
                     <span></span>
                 </button>
                 <div class="navbar-nav" id="navbarNav">
+                    <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
                     <a href="blog.html" id="blogLink" class="primary-cta" aria-label="Add new blog post">Add Post</a>
                     <a href="#" onclick="openModal('aboutModal')" aria-label="About this platform">ABOUT</a>
                     <a href="logout.html" aria-label="Logout from the platform">LOGOUT</a>
@@ -108,6 +130,7 @@
         <section class="container" id="dynamic-blog-posts" role="region" aria-labelledby="blog-posts-heading">
             <h2 id="blog-posts-heading">Latest Blog Posts <span class="subtext">These are the new posts...</span></h2>
             <div id="blogContainer" role="list" aria-live="polite" aria-busy="false"></div>
+            <div id="pagination-controls" class="pagination-container"></div>
         </section>
 
         <!-- Design Items Section -->
@@ -437,6 +460,16 @@
             <h2 id="readMoreTitle">Blog Title</h2>
             <time id="readMoreDate">20 January, 2020</time>
             <div id="readMoreContent">Full content goes here...</div>
+            <div class="comments-section">
+                <h4><i class="fas fa-comments"></i> Comments</h4>
+                <div id="comments-list"></div>
+                <input type="hidden" id="comment-parent-id" value="">
+                <div id="reply-indicator" style="display: none; padding: 0.3rem 0; color: var(--muted); font-size: var(--font-size-sm);"></div>
+                <div class="comment-form">
+                    <textarea id="comment-body" placeholder="Write a comment..." rows="3"></textarea>
+                    <button class="btn-primary" onclick="submitComment(window._currentPostId)">Post Comment</button>
+                </div>
+            </div>
         </div>
     </div>
 
