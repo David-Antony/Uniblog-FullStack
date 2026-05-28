@@ -8,6 +8,7 @@
         // Clear stored auth info on logout
         localStorage.removeItem('role');
         localStorage.removeItem('username');
+        localStorage.removeItem('token');
         sessionStorage.clear();
         window.location.href = "LOGIN_PAGE.html"; // Redirect to login page
     </script>
