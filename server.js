@@ -739,6 +739,84 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'LOGIN_PAGE.html')));
 app.get('/homepage.html', (req, res) => res.sendFile(path.join(__dirname, 'public', 'homepage.html')));
 
+// ==================== 404 Handler ====================
+
+app.use((req, res) => {
+    res.status(404).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Page Not Found | UniBlog</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" crossorigin="anonymous" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Quicksand:wght@400;500&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #faf9f6 0%, #eeede8 100%);
+            font-family: 'Quicksand', sans-serif;
+            color: #1e1e2e;
+        }
+        .error-wrap {
+            text-align: center;
+            padding: 2rem;
+        }
+        .error-code {
+            font-family: 'Playfair Display', serif;
+            font-size: 8rem;
+            font-weight: 700;
+            color: #c7901e;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .error-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            margin-bottom: 0.8rem;
+        }
+        .error-desc {
+            color: #6b6b7a;
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .error-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 2rem;
+            background: #1e1e2e;
+            color: #f0ede8;
+            text-decoration: none;
+            border-radius: 999px;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        .error-btn:hover {
+            background: #c7901e;
+            color: #1a1a28;
+            box-shadow: 0 8px 24px rgba(199, 144, 30, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-wrap">
+        <div class="error-code">404</div>
+        <h1 class="error-title">Page Not Found</h1>
+        <p class="error-desc">The page you're looking for doesn't exist or has been moved. Let's get you back on track.</p>
+        <a href="/homepage.html" class="error-btn"><i class="fas fa-home"></i> Back to Home</a>
+    </div>
+</body>
+</html>`);
+});
+
 // ==================== Server Start ====================
 
 async function startServer() {
