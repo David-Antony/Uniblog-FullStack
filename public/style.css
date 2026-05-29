@@ -508,7 +508,7 @@ a:hover {
 
 header {
     min-height: 100vh;
-    background: linear-gradient(135deg, rgba(25, 26, 35, 0.92), rgba(11, 22, 44, 0.88)), url(images/banner-bg.jpg) center/cover no-repeat fixed;
+    background: linear-gradient(135deg, rgba(20, 20, 43, 0.92), rgba(15, 22, 40, 0.88)), url(images/banner-bg.jpg) center/cover no-repeat fixed;
     display: flex;
     flex-direction: column;
     justify-content: stretch;
@@ -660,7 +660,7 @@ header {
     padding: 0.45rem 1rem;
     border: 1px solid var(--gold);
     border-radius: var(--border-radius-pill);
-    background: rgba(219, 174, 26, 0.16);
+    background: rgba(199, 144, 30, 0.18);
     color: var(--white);
 }
 
