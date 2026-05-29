@@ -1,5 +1,7 @@
 # 🚀 Blog Website — Project Reference
 
+> **Last Updated: 2026-05-29**
+
 > **Quick Intro:** A full-stack blog platform where **Admins** publish & manage content (posts, announcements, achievers) and **Students** browse, like, comment & share. Features JWT authentication, bcrypt password hashing, rich text editing, dark mode, pagination, Swagger API docs, and Docker support. Built with vanilla **HTML/CSS/JS** on the frontend and **Express.js + MongoDB** on the backend.
 
 ---
@@ -37,8 +39,6 @@ blog-website/
         ├── news-4.png
         ├── RATAN TATA.jpg
         └── ratan-tata-2.jpg
-└── plans/
-    └── bug-fix-plan-v1.1.0.md   # Bug fix planning document — pagination fixes + dark mode overhaul
 ```
 
 ---
@@ -257,6 +257,11 @@ blog-website/
 ---
 
 ## 🐛 Bug Fix Changelog
+
+### v1.2.0 — 2026-05-29
+| Change | Details |
+|--------|---------|
+| Warm Academic Color Palette | Complete redesign of light & dark mode colors across 3 files (style.css, blog.html, LOGIN_PAGE.html). Light: warm cream (#faf9f6) + navy text (#1e1e2e) + amber gold (#c7901e). Dark: espresso (#12121e) + ivory text (#e8e6e3) + bright gold (#f0c040). 40+ element rules covered. |
 
 ### v1.1.0 — 2025-05-29
 | Bug | Root Cause | Fix |
