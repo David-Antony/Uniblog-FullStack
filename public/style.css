@@ -150,6 +150,16 @@
     --shadow-md: 0 6px 18px rgba(0, 0, 0, 0.35);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.3);
     --shadow-xl: 0 10px 40px rgba(0, 0, 0, 0.4);
+
+    /* Semantic: foreground text colors for dark mode */
+    --text-primary: #f0f0f0;
+    --text-secondary: #c0c0c0;
+    --text-on-dark: #f0f0f0;
+    --bg-card: #1e1e2e;
+    --bg-input: #2a2a3a;
+    --bg-footer: #0d0d1a;
+    --bg-nav: #1a1a2e;
+    --border-subtle: #2a2a3a;
     
     background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 100%);
 }
@@ -167,6 +177,182 @@
 [data-theme="dark"] .modal-content {
     background: var(--card-bg);
     border: 1px solid var(--gray-medium);
+}
+
+/* --- Fix 3b: Search input contrast --- */
+[data-theme="dark"] .search-input {
+    color: var(--text-primary);
+    background: var(--bg-input);
+}
+[data-theme="dark"] .search-btn {
+    background: var(--gold);
+    color: var(--text-on-dark);
+}
+
+/* --- Fix 3c: Pagination buttons --- */
+[data-theme="dark"] .page-btn.active {
+    background: var(--gold);
+    color: var(--text-on-dark);
+    border-color: var(--gold);
+}
+[data-theme="dark"] .page-btn {
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    border-color: var(--border-subtle);
+}
+[data-theme="dark"] .page-btn:hover:not(.disabled):not(.active) {
+    background: var(--gold);
+    color: var(--white);
+}
+
+/* --- Fix 3d: Like/share buttons --- */
+[data-theme="dark"] .like-btn,
+[data-theme="dark"] .share-btn {
+    background: var(--bg-input);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+}
+[data-theme="dark"] .like-btn:hover,
+[data-theme="dark"] .share-btn:hover {
+    background: var(--danger);
+    color: var(--white);
+    border-color: var(--danger);
+}
+[data-theme="dark"] .like-btn.liked {
+    background: var(--danger);
+    color: var(--white);
+}
+
+/* --- Fix 3e: Footer contrast --- */
+[data-theme="dark"] footer {
+    background: var(--bg-footer);
+    color: var(--text-secondary);
+}
+[data-theme="dark"] .social-links a {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--text-secondary);
+}
+[data-theme="dark"] .social-links a:hover {
+    background: var(--gold);
+    color: var(--text-on-dark);
+    border-color: var(--gold);
+}
+[data-theme="dark"] footer h3,
+[data-theme="dark"] footer h2 {
+    color: var(--text-primary);
+}
+
+/* --- Fix 3f: Form modal content --- */
+[data-theme="dark"] .form-modal-content {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+}
+[data-theme="dark"] .form-modal-content input,
+[data-theme="dark"] .form-modal-content textarea,
+[data-theme="dark"] .form-modal-content select {
+    background: var(--bg-input);
+    color: var(--text-primary);
+    border-color: var(--border-subtle);
+}
+[data-theme="dark"] .form-modal-content label {
+    color: var(--text-primary);
+}
+
+/* --- Fix 3g: Quill editor toolbar icons --- */
+[data-theme="dark"] .ql-toolbar.ql-snow {
+    background: var(--bg-input);
+    border-color: var(--border-subtle);
+}
+[data-theme="dark"] .ql-toolbar.ql-snow .ql-stroke {
+    stroke: var(--text-secondary);
+}
+[data-theme="dark"] .ql-toolbar.ql-snow .ql-fill {
+    fill: var(--text-secondary);
+}
+[data-theme="dark"] .ql-toolbar.ql-snow .ql-picker {
+    color: var(--text-secondary);
+}
+[data-theme="dark"] .ql-container.ql-snow {
+    background: var(--bg-card);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+}
+[data-theme="dark"] .ql-editor {
+    color: var(--text-primary);
+}
+
+/* --- Fix 3h: Achiever about-text card --- */
+[data-theme="dark"] .about-text {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+[data-theme="dark"] .about-text h3 {
+    color: var(--text-primary);
+}
+[data-theme="dark"] .about-text p {
+    color: var(--text-secondary);
+}
+
+/* --- Fix 3i: Post cards and blog cards --- */
+[data-theme="dark"] .blog-post-card,
+[data-theme="dark"] .design-item-card {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-md);
+}
+[data-theme="dark"] .blog-post-card h3,
+[data-theme="dark"] .design-item-card h3 {
+    color: var(--text-primary);
+}
+[data-theme="dark"] .blog-post-card p {
+    color: var(--text-secondary);
+}
+
+/* --- Fix 3j: Nav/navbar --- */
+[data-theme="dark"] .navbar {
+    background: var(--bg-nav);
+}
+[data-theme="dark"] .navbar a {
+    color: var(--text-secondary);
+}
+[data-theme="dark"] .navbar a:hover,
+[data-theme="dark"] .navbar .active {
+    color: var(--gold);
+}
+
+/* --- Fix 3k: Blog text content sections --- */
+[data-theme="dark"] .blog-text,
+[data-theme="dark"] .title h2,
+[data-theme="dark"] .title p {
+    color: var(--text-primary);
+}
+[data-theme="dark"] .blog-text p {
+    color: var(--text-secondary);
+}
+[data-theme="dark"] .blog-post-card .category-tag,
+[data-theme="dark"] .design-item-card .category-tag {
+    background: var(--gold);
+    color: var(--text-on-dark);
+}
+
+/* --- Fix 3l: Section titles and headings --- */
+[data-theme="dark"] .section-title h2,
+[data-theme="dark"] .section-title p,
+[data-theme="dark"] .design-content h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4 {
+    color: var(--text-primary);
+}
+
+/* --- Fix 3m: Stat counters --- */
+[data-theme="dark"] .stat-item h2,
+[data-theme="dark"] .stat-item p {
+    color: var(--text-primary);
+}
+[data-theme="dark"] .stat-item {
+    background: var(--bg-card);
 }
 
 /* ==================== Global Reset ==================== */
