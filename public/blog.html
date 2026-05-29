@@ -32,32 +32,36 @@
             --Playfair: 'Playfair Display', serif;
             --Quicksand: 'Quicksand', sans-serif;
             --Roboto: 'Roboto', sans-serif;
-            --dark: #3c393d;
-            --exDark: #2b2b2b;
+            --dark: #1e1e2e;
+            --exDark: #14142b;
         }
         *{
             padding: 0;
             margin: 0;
             font-family: var(--Quicksand);
         }
-        /* Basic styling for the form */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #888;
+            background-color: #eeede8;
         }
-
+        [data-theme="dark"] body {
+            background-color: #12121e;
+        }
         .container {
             width: 80%;
             margin: auto;
             padding: 20px;
-            background-color: #fefefe;
+            background-color: #fffefc;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             margin-top: 50px;
             position: relative;
         }
-
+        [data-theme="dark"] .container {
+            background-color: #1a1a28;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
         .cancel-btn {
             position: absolute;
             top: 10px;
@@ -66,19 +70,25 @@
             border: none;
             font-size: 24px;
             cursor: pointer;
-            color: #333;
+            color: #4a4a5a;
         }
-
+        [data-theme="dark"] .cancel-btn {
+            color: #9898a8;
+        }
         .cancel-btn:hover {
-            color: #ff4d4d;
+            color: #c0392b;
         }
-
+        [data-theme="dark"] .cancel-btn:hover {
+            color: #ff6b6b;
+        }
         h1 {
             text-align: center;
-            color: #333;
+            color: #2d2d3f;
             margin-bottom: 20px;
         }
-
+        [data-theme="dark"] h1 {
+            color: #e8e6e3;
+        }
         form {
             display: flex;
             flex-direction: column;
@@ -87,57 +97,113 @@
         select{
             padding: 10px;
             font-size: 16px;
-            border: 1px solid #ccc;
+            border: 1px solid #e0dfdb;
             border-radius: 5px;
+            background-color: #fffefc;
+            color: #1e1e2e;
         }
-
+        [data-theme="dark"] select {
+            border-color: #2a2a3c;
+            background-color: #222238;
+            color: #e8e6e3;
+        }
         label {
             font-size: 18px;
-            color: #555;
+            color: #4a4a5a;
         }
-
+        [data-theme="dark"] label {
+            color: #9898a8;
+        }
         input[type="text"], textarea, input[type="file"] {
             padding: 10px;
             font-size: 16px;
-            border: 1px solid #ccc;
+            border: 1px solid #e0dfdb;
             border-radius: 5px;
             width: 95%;
+            background-color: #faf9f6;
+            color: #1e1e2e;
         }
-
+        [data-theme="dark"] input[type="text"],
+        [data-theme="dark"] textarea,
+        [data-theme="dark"] input[type="file"] {
+            border-color: #2a2a3c;
+            background-color: #222238;
+            color: #e8e6e3;
+        }
+        input[type="text"]:focus,
+        textarea:focus {
+            border-color: #c7901e;
+            outline: none;
+            background-color: #fffefc;
+            box-shadow: 0 0 0 3px rgba(199, 144, 30, 0.15);
+        }
+        [data-theme="dark"] input[type="text"]:focus,
+        [data-theme="dark"] textarea:focus {
+            border-color: #f0c040;
+            background-color: #222238;
+            box-shadow: 0 0 0 3px rgba(240, 192, 64, 0.2);
+        }
         textarea {
             height: 150px;
         }
-
         .content-textarea {
             height: 300px;
             resize: vertical;
         }
-
         button {
             padding: 15px;
-            background-color: #000000;
-            color: #ffffff;
+            background-color: #1e1e2e;
+            color: #f0ede8;
             font-size: 18px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
         }
-
-        button:hover {
-            background-color: #888;
-            color: #000000;
+        [data-theme="dark"] button {
+            background-color: #c7901e;
+            color: #1a1a28;
+            font-weight: 700;
         }
-
+        button:hover {
+            background-color: #4a4a5a;
+            color: #ffffff;
+        }
+        [data-theme="dark"] button:hover {
+            background-color: #f0c040;
+            color: #1a1a28;
+        }
         .message {
             margin-top: 20px;
             font-size: 16px;
-            color: green;
+            color: #2d8a4e;
             text-align: center;
         }
-
-        /* Quill editor full width in the form */
+        [data-theme="dark"] .message {
+            color: #4ade80;
+        }
         .ql-editor {
             min-height: 250px;
+        }
+        [data-theme="dark"] .ql-toolbar.ql-snow {
+            background: #222238;
+            border-color: #2a2a3c;
+        }
+        [data-theme="dark"] .ql-toolbar.ql-snow .ql-stroke {
+            stroke: #9898a8;
+        }
+        [data-theme="dark"] .ql-toolbar.ql-snow .ql-fill {
+            fill: #9898a8;
+        }
+        [data-theme="dark"] .ql-toolbar.ql-snow .ql-picker {
+            color: #9898a8;
+        }
+        [data-theme="dark"] .ql-container.ql-snow {
+            background: #1a1a28;
+            border-color: #2a2a3c;
+            color: #e8e6e3;
+        }
+        [data-theme="dark"] .ql-editor {
+            color: #e8e6e3;
         }
     </style>
 </head>
