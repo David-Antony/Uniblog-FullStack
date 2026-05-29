@@ -263,6 +263,14 @@ blog-website/
 |--------|---------|
 | Warm Academic Color Palette | Complete redesign of light & dark mode colors across 3 files (style.css, blog.html, LOGIN_PAGE.html). Light: warm cream (#faf9f6) + navy text (#1e1e2e) + amber gold (#c7901e). Dark: espresso (#12121e) + ivory text (#e8e6e3) + bright gold (#f0c040). 40+ element rules covered. |
 
+### v1.3.0 — 2026-05-29
+| Change | Details |
+|--------|---------|
+| Toast Notification System | Replaced all 19 `alert()`/`confirm()` browser popups with custom animated toast notifications. 4 variants: success (green), error (red), warning (amber), info (cyan). Added `showToast()`, `dismissToast()`, and `showConfirmToast()` helper functions. Toast CSS with slide-in/slide-out animations. |
+| XSS Sanitization (DOMPurify) | Server-side HTML sanitization using `dompurify` + `jsdom`. Applied to all POST/PUT routes in `createCrudRoutes()` (content, description, desc1, desc2, quote fields) and comment POST route. Client-side `sanitizeHTML()` enhanced with regex-based stripping of script tags, event handlers, javascript: URLs, and iframes. |
+| Custom 404 Page | Styled HTML 404 page with UniBlog branding, gold 404 code, and "Back to Home" button using Warm Academic palette. Replaces Express default "Cannot GET" text response. |
+| Professional README.md | Added comprehensive README with shield badges, feature list, tech stack table, API endpoint reference, quick start guide with default credentials, project structure tree, testing instructions, and Docker deployment commands. |
+
 ### v1.1.0 — 2025-05-29
 | Bug | Root Cause | Fix |
 |-----|-----------|-----|
