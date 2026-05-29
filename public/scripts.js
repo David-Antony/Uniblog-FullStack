@@ -26,6 +26,82 @@ const RETRY_CONFIG = {
     maxDelay: 10000 // 10 seconds
 };
 
+// ==================== Toast Notification System ====================
+
+let toastContainer = null;
+
+function getToastContainer() {
+    if (!toastContainer || !document.body.contains(toastContainer)) {
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+    return toastContainer;
+}
+
+/**
+ * Show a toast notification.
+ * @param {string} message - The message to display
+ * @param {'success'|'error'|'warning'|'info'} type - Toast type
+ * @param {number} [duration=3500] - Auto-dismiss in ms (0 = manual dismiss only)
+ */
+function showToast(message, type = 'info', duration = 3500) {
+    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <i class="fas ${icons[type] || icons.info}" aria-hidden="true"></i>
+        <span class="toast-msg">${sanitizeHTML(message)}</span>
+        <button class="toast-close" aria-label="Dismiss">&times;</button>
+    `;
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => dismissToast(toast));
+    if (duration > 0) {
+        const timer = setTimeout(() => dismissToast(toast), duration);
+        toast._timer = timer;
+        closeBtn.addEventListener('click', () => clearTimeout(timer));
+    }
+    getToastContainer().appendChild(toast);
+    return toast;
+}
+
+function dismissToast(toast) {
+    if (toast._dismissing) return;
+    toast._dismissing = true;
+    if (toast._timer) clearTimeout(toast._timer);
+    toast.classList.add('toast-exit');
+    toast.addEventListener('animationend', () => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    });
+}
+
+/**
+ * Show a confirmation dialog as a toast with "Yes" / "No" buttons.
+ * Returns a Promise that resolves to true (confirmed) or false (cancelled).
+ */
+function showConfirmToast(message) {
+    return new Promise((resolve) => {
+        const toast = document.createElement('div');
+        toast.className = 'toast toast-warning';
+        toast.style.minWidth = '320px';
+        toast.innerHTML = `
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
+            <span class="toast-msg">${sanitizeHTML(message)}</span>
+            <button class="toast-confirm-yes" style="background:var(--exDark);color:#fff;border:none;padding:0.3rem 0.7rem;border-radius:4px;cursor:pointer;font-size:0.8rem;margin-left:0.4rem;">Yes</button>
+            <button class="toast-confirm-no" style="background:transparent;color:inherit;border:1px solid;padding:0.3rem 0.7rem;border-radius:4px;cursor:pointer;font-size:0.8rem;">No</button>
+        `;
+        const yesBtn = toast.querySelector('.toast-confirm-yes');
+        const noBtn = toast.querySelector('.toast-confirm-no');
+        const cleanup = (result) => {
+            resolve(result);
+            dismissToast(toast);
+        };
+        yesBtn.addEventListener('click', () => cleanup(true));
+        noBtn.addEventListener('click', () => cleanup(false));
+        getToastContainer().appendChild(toast);
+    });
+}
+
 // ==================== State Management ====================
 
 let postsCache = [];
@@ -65,7 +141,7 @@ function handleError(error, context = 'Operation', showAlert = true) {
     
     if (showAlert) {
         const userMessage = error.message || 'An unexpected error occurred. Please try again.';
-        alert(`${context} failed: ${userMessage}`);
+        showToast(`${context} failed: ${userMessage}`, 'error');
     }
 }
 
@@ -116,7 +192,7 @@ async function submitEntityForm(formId, itemIdField, endpoint, bodyBuilder, vali
     const itemId = document.getElementById(itemIdField).value;
     
     const errorMsg = validator();
-    if (errorMsg) { alert(errorMsg); return; }
+    if (errorMsg) { showToast(errorMsg, 'warning'); return; }
     
     try {
         const url = itemId ? `${endpoint}/${itemId}` : endpoint;
@@ -132,15 +208,15 @@ async function submitEntityForm(formId, itemIdField, endpoint, bodyBuilder, vali
         if (data.success) {
             modalCloseFn();
             refreshFn();
-            alert(itemId ? `${label} updated successfully!` : `${label} added successfully!`);
+            showToast(itemId ? `${label} updated successfully!` : `${label} added successfully!`, 'success');
             document.getElementById(formId).reset();
             document.getElementById(itemIdField).value = '';
         } else {
-            alert(`Failed: ${data.message || 'Unknown error'}`);
+            showToast(`Failed: ${data.message || 'Unknown error'}`, 'error');
         }
     } catch (err) {
         console.error(`❌ Error saving ${label.toLowerCase()}:`, err);
-        alert(`Failed to save ${label.toLowerCase()}. Check server/console.`);
+        showToast(`Failed to save ${label.toLowerCase()}. Check server/console.`, 'error');
     }
 }
 
@@ -324,7 +400,7 @@ function configureBlogLink() {
     } else {
         blogLink.addEventListener('click', function (event) {
             event.preventDefault();
-            alert("Please log in first.");
+            showToast("Please log in first.", 'warning');
             window.location.href = "LOGIN_PAGE.html";
         });
     }
@@ -614,7 +690,7 @@ async function deletePost(id) {
 // Toggle the like state on a blog post (like if not liked, unlike if already liked)
 function toggleLike(id) {
     const username = getUsername();
-    if (!username) { alert('Please log in to like posts.'); return; }
+    if (!username) { showToast('Please log in to like posts.', 'warning'); return; }
     
     console.log(`❤️ Toggling like for post ${id} (user: ${username})`);
     const pid = idToString(id);
@@ -674,9 +750,9 @@ async function sharePost(id, title) {
         } else {
             try {
                 await navigator.clipboard.writeText(shareData.url);
-                alert('Link copied to clipboard!');
+                showToast('Link copied to clipboard!', 'success');
             } catch (err) {
-                alert('Failed to copy link. Please try again.');
+                showToast('Failed to copy link. Please try again.', 'error');
             }
         }
     } finally {
@@ -947,13 +1023,13 @@ function editDesignItem(id) {
 async function deleteDesignItem(id) {
     await deleteEntity(API_ENDPOINTS.DESIGN_ITEMS, id,
         'Are you sure you want to delete this announcement?', 'announcement',
-        () => { fetchDesignItems(); alert('Announcement deleted successfully!'); });
+        () => { fetchDesignItems(); showToast('Announcement deleted successfully!', 'success'); });
 }
 
 // Toggle like/unlike on a design/announcement item
 function toggleDesignLike(id) {
     const username = getUsername();
-    if (!username) { alert('Please log in to like announcements.'); return; }
+    if (!username) { showToast('Please log in to like announcements.', 'warning'); return; }
     
     console.log(`❤️ Toggling like for design item ${id} (user: ${username})`);
     
@@ -967,7 +1043,7 @@ function toggleDesignLike(id) {
             designItemsCache = updateCacheLike(designItemsCache, id, data);
             renderDesignItems(designItemsCache);
         } else {
-            alert(`Like failed: ${data.message || 'Unknown error'}`);
+            showToast(`Like failed: ${data.message || 'Unknown error'}`, 'error');
         }
     })
     .catch(err => handleError(err, 'Like design item'));
@@ -1117,7 +1193,7 @@ function editStaticBlogItem(id) {
 async function deleteStaticBlogItem(id) {
     await deleteEntity(API_ENDPOINTS.STATIC_BLOG_ITEMS, id,
         'Are you sure you want to delete this blog item?', 'blog item',
-        () => { fetchStaticBlogItems(); alert('Blog item deleted successfully!'); });
+        () => { fetchStaticBlogItems(); showToast('Blog item deleted successfully!', 'success'); });
 }
 
 // Open the "Read More" modal for a static blog item
@@ -1225,7 +1301,7 @@ async function submitComment(postId) {
     const bodyInput = document.getElementById('comment-body');
     const body = bodyInput ? bodyInput.value.trim() : '';
     if (!body) {
-        alert('Please enter a comment.');
+        showToast('Please enter a comment.', 'warning');
         return;
     }
     
@@ -1248,7 +1324,7 @@ async function submitComment(postId) {
             }
             await loadComments(postId);
         } else {
-            alert(`Failed: ${data.message || 'Unknown error'}`);
+            showToast(`Failed: ${data.message || 'Unknown error'}`, 'error');
         }
     } catch (err) {
         handleError(err, 'Submit comment');
@@ -1287,7 +1363,7 @@ async function deleteComment(commentId, postId) {
         if (data.success) {
             await loadComments(postId);
         } else {
-            alert(`Failed: ${data.message || 'Unknown error'}`);
+            showToast(`Failed: ${data.message || 'Unknown error'}`, 'error');
         }
     } catch (err) {
         handleError(err, 'Delete comment');
@@ -1476,7 +1552,7 @@ async function deleteAchiever() {
     const achiever = achieversCache[currentAchieverIndex];
     await deleteEntity(API_ENDPOINTS.ACHIEVERS, idToString(achiever._id),
         `Are you sure you want to delete "${achiever.name}"?`, 'achiever',
-        () => { fetchAchievers(); alert('Achiever deleted successfully!'); });
+        () => { fetchAchievers(); showToast('Achiever deleted successfully!', 'success'); });
 }
 
 // Handle form submission for adding or editing an achiever — delegates to shared submitEntityForm
@@ -1553,7 +1629,7 @@ function setupImageInputGroup(textInputId, fileInputId, browseBtnId) {
         if (!file) return;
 
         if (!file.type.startsWith('image/')) {
-            alert('Please select a valid image file.');
+            showToast('Please select a valid image file.', 'warning');
             this.value = '';
             return;
         }
@@ -1561,7 +1637,7 @@ function setupImageInputGroup(textInputId, fileInputId, browseBtnId) {
         // Limit file size to 5MB
         const MAX_SIZE = 5 * 1024 * 1024;
         if (file.size > MAX_SIZE) {
-            alert('Image size must be less than 5MB. Please choose a smaller image.');
+            showToast('Image size must be less than 5MB. Please choose a smaller image.', 'warning');
             this.value = '';
             return;
         }
@@ -1572,7 +1648,7 @@ function setupImageInputGroup(textInputId, fileInputId, browseBtnId) {
             textInput.dispatchEvent(new Event('input', { bubbles: true }));
         };
         reader.onerror = function() {
-            alert('Failed to read the image file. Please try again.');
+            showToast('Failed to read the image file. Please try again.', 'error');
         };
         reader.readAsDataURL(file);
     });
