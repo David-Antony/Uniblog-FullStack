@@ -33,7 +33,7 @@
         }
         body {
             font-family: 'Arial', sans-serif;
-            background: radial-gradient(circle at var(--mx) var(--my), rgba(219,174,26,0.25), rgba(17,17,23,0.2) 32%, #0f1117 65%);
+            background: radial-gradient(circle at var(--mx) var(--my), rgba(199,144,30,0.18), rgba(18,18,30,0.15) 32%, #12121e 65%);
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -46,7 +46,7 @@
             position: absolute;
             width: 480px;
             height: 480px;
-            background: radial-gradient(circle, rgba(255,255,255,0.08), rgba(255,255,255,0));
+            background: radial-gradient(circle, rgba(255,255,255,0.06), rgba(255,255,255,0));
             filter: blur(40px);
             top: -120px;
             right: -80px;
@@ -54,11 +54,11 @@
         }
 
         .container {
-            background-color: #fff;
+            background-color: #fffefc;
             padding: 44px;
             width: 100%;
             max-width: 440px;
-            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+            box-shadow: 0 24px 64px rgba(30, 30, 46, 0.12);
             border-radius: 16px;
             text-align: center;
             position: relative;
@@ -68,7 +68,7 @@
         h1 {
             font-size: 2em;
             margin-bottom: 20px;
-            color: #333;
+            color: #1e1e2e;
         }
 
         form {
@@ -80,29 +80,30 @@
             font-size: 16px;
             margin-bottom: 8px;
             text-align: left;
-            color: #666;
+            color: #4a4a5a;
         }
 
         input[type="text"],
         .password-wrap input[type="password"] {
             padding: 12px;
             margin-bottom: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid #e0dfdb;
             border-radius: 5px;
             font-size: 16px;
             width: 100%;
             box-sizing: border-box;
-            background-color: #f9f9f9;
+            background-color: #faf9f6;
+            color: #1e1e2e;
             transition: border-color 0.2s ease, box-shadow 0.2s ease;
             padding-right: 44px;
         }
 
         input[type="text"]:focus,
         .password-wrap input[type="password"]:focus {
-            border-color: #dbae1a;
+            border-color: #c7901e;
             outline: none;
             background-color: #fff;
-            box-shadow: 0 0 0 3px rgba(219, 174, 26, 0.25);
+            box-shadow: 0 0 0 3px rgba(199, 144, 30, 0.2);
         }
 
         .password-wrap{
@@ -120,7 +121,7 @@
             border: none;
             cursor: pointer;
             padding: 5px;
-            color: #888;
+            color: #6b6b7a;
             font-size: 18px;
             line-height: 1;
             width: 30px;
@@ -129,18 +130,18 @@
             transition: color 0.2s ease, background-color 0.2s ease;
         }
         .eye-btn:hover{
-            color: #dbae1a;
-            background-color: rgba(219, 174, 26, 0.1);
+            color: #c7901e;
+            background-color: rgba(199, 144, 30, 0.1);
         }
         .eye-btn:active{
-            color: #dbae1a;
+            color: #b07d15;
         }
 
         button {
             padding: 15px;
             font-size: 16px;
-            background-color: #111;
-            color: #ffffff;
+            background-color: #1e1e2e;
+            color: #f0ede8;
             border: none;
             border-radius: 999px;
             cursor: pointer;
@@ -149,14 +150,14 @@
         }
 
         button:hover {
-            background-color: #dbae1a;
-            color: #111;
-            box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+            background-color: #c7901e;
+            color: #1a1a28;
+            box-shadow: 0 12px 28px rgba(30, 30, 46, 0.12);
         }
 
         #error-message {
             margin-top: 20px;
-            color: #ff4d4d;
+            color: #c0392b;
             font-size: 14px;
         }
 
