@@ -358,6 +358,46 @@
     background: var(--bg-card);
 }
 
+/* --- New semantic dark mode element rules (v1.2.0) --- */
+[data-theme="dark"] .search-input::placeholder { color: #6b6b7a; }
+[data-theme="dark"] .blog-text a { background: var(--gold); color: var(--text-on-dark); }
+[data-theme="dark"] .blog-text a:hover { background: var(--gold-hover); }
+[data-theme="dark"] .design-img span:first-of-type { background: rgba(0, 0, 0, 0.85); }
+[data-theme="dark"] .heart { background: rgba(0, 0, 0, 0.85); }
+[data-theme="dark"] .pill { background: #3d2e00; color: #f0c040; border-color: #5a4400; }
+[data-theme="dark"] .modal-content h2 { color: var(--text-primary); }
+[data-theme="dark"] .modal-content #readMoreContent { color: var(--text-primary); }
+[data-theme="dark"] .modal-content #readMoreDate { color: var(--text-secondary); }
+[data-theme="dark"] .close { color: var(--text-secondary); }
+[data-theme="dark"] .close:hover { color: var(--text-primary); }
+[data-theme="dark"] .about { background: var(--bg-light); }
+[data-theme="dark"] .blog { background: var(--gray-light); }
+[data-theme="dark"] .cancel-btn { background: var(--gray-medium); color: var(--text-primary); }
+[data-theme="dark"] .cancel-btn:hover { background: var(--gray-border); }
+[data-theme="dark"] .edit-design-btn, [data-theme="dark"] .delete-design-btn { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.1); color: var(--text-secondary); }
+[data-theme="dark"] .edit-design-btn:hover { background: var(--gold); color: var(--text-on-dark); border-color: var(--gold); }
+[data-theme="dark"] .delete-design-btn:hover { background: var(--danger-dark); color: #fff; border-color: var(--danger-dark); }
+[data-theme="dark"] .comments-section { border-top-color: var(--border-subtle); }
+[data-theme="dark"] .comment-item { border-bottom-color: var(--border-subtle); }
+[data-theme="dark"] .comment-author { color: var(--text-primary); }
+[data-theme="dark"] .comment-time { color: var(--muted); }
+[data-theme="dark"] .comment-body { color: var(--text-secondary); }
+[data-theme="dark"] .comment-reply { border-left-color: var(--border-subtle); }
+[data-theme="dark"] .comment-form textarea { background: var(--bg-input); color: var(--text-primary); border-color: var(--border-subtle); }
+[data-theme="dark"] .comment-reply-btn { color: var(--muted); }
+[data-theme="dark"] .comment-reply-btn:hover { color: var(--gold); }
+[data-theme="dark"] .ql-editor.ql-blank::before { color: #6b6b7a; }
+[data-theme="dark"] .form-modal-content input::placeholder,
+[data-theme="dark"] .form-modal-content textarea::placeholder { color: #6b6b7a; }
+[data-theme="dark"] .filter-panel label { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
+[data-theme="dark"] .stat { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
+[data-theme="dark"] .post-stats { border-top-color: var(--border-subtle); }
+[data-theme="dark"] #readMoreModal #readMoreContent { color: var(--text-primary); }
+[data-theme="dark"] .delete-btn { background: var(--danger); color: #ffffff; }
+[data-theme="dark"] .delete-btn:hover { background: var(--danger-hover); }
+[data-theme="dark"] .edit-btn, [data-theme="dark"] .edit-design-btn, [data-theme="dark"] .edit-achiever-btn, [data-theme="dark"] .add-achiever-btn { background: var(--success); color: #ffffff; }
+[data-theme="dark"] .edit-btn:hover, [data-theme="dark"] .edit-achiever-btn:hover, [data-theme="dark"] .add-achiever-btn:hover { background: var(--success-hover); }
+
 /* ==================== Global Reset ==================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&display=swap');
