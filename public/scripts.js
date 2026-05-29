@@ -819,7 +819,8 @@ async function fetchDesignItems() {
         const res = await fetch(API_ENDPOINTS.DESIGN_ITEMS);
         if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         
-        designItemsCache = await res.json();
+        const data = await res.json();
+        designItemsCache = data.items || (Array.isArray(data) ? data : []);
         console.log(`✅ Fetched ${designItemsCache.length} design items`);
         
         renderDesignItems(designItemsCache);
@@ -982,7 +983,7 @@ function fetchStaticBlogItems() {
             return res.json();
         })
         .then(items => {
-            staticBlogItemsCache = Array.isArray(items) ? items : [];
+            staticBlogItemsCache = items?.items || (Array.isArray(items) ? items : []);
             renderStaticBlogItems(staticBlogItemsCache);
         })
         .catch(err => {
@@ -1405,7 +1406,7 @@ async function fetchAchievers() {
         const res = await fetch(API_ENDPOINTS.ACHIEVERS);
         const items = await res.json();
         
-        achieversCache = Array.isArray(items) ? items : [];
+        achieversCache = items?.items || (Array.isArray(items) ? items : []);
         updateAchieverDisplay();
     } catch (err) {
         console.error('❌ Error fetching achievers:', err);
