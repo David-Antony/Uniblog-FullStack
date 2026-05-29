@@ -252,6 +252,13 @@ function createCrudRoutes(config) {
             const missing = requiredFields.filter(f => !req.body[f]);
             if (missing.length) return sendError(res, HTTP_STATUS.BAD_REQUEST, `Required fields missing: ${missing.join(', ')}`);
 
+            // Sanitize HTML fields before storing
+            ['content', 'description', 'desc1', 'desc2', 'quote'].forEach(field => {
+                if (req.body[field] && typeof req.body[field] === 'string') {
+                    req.body[field] = DOMPurify.sanitize(req.body[field]);
+                }
+            });
+
             const doc = buildDoc ? buildDoc(req.body) : req.body;
             const result = await col().insertOne({ ...doc, createdAt: new Date() });
             console.log(`📝 ${label} created:`, result.insertedId);
@@ -269,6 +276,13 @@ function createCrudRoutes(config) {
 
             const missing = requiredFields.filter(f => !req.body[f]);
             if (missing.length) return sendError(res, HTTP_STATUS.BAD_REQUEST, `Required fields missing: ${missing.join(', ')}`);
+
+            // Sanitize HTML fields before storing
+            ['content', 'description', 'desc1', 'desc2', 'quote'].forEach(field => {
+                if (req.body[field] && typeof req.body[field] === 'string') {
+                    req.body[field] = DOMPurify.sanitize(req.body[field]);
+                }
+            });
 
             const updateData = buildUpdate ? buildUpdate(req.body) : req.body;
             updateData.updatedAt = new Date();
@@ -627,10 +641,12 @@ app.post('/posts/:postId/comments', verifyToken, async (req, res) => {
             return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Comment body is required');
         }
         
+        const cleanBody = DOMPurify.sanitize(body.trim());
+
         const comment = {
             postId: req.params.postId,
             author: req.user.username,
-            body: body.trim(),
+            body: cleanBody,
             parentId: parentId || null,
             createdAt: new Date()
         };
