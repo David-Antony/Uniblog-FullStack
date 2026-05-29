@@ -508,7 +508,7 @@ a:hover {
 
 header {
     min-height: 100vh;
-    background: linear-gradient(135deg, rgba(20, 20, 43, 0.92), rgba(15, 22, 40, 0.88)), url(images/banner-bg.jpg) center/cover no-repeat fixed;
+    background: linear-gradient(135deg, rgba(20, 20, 43, 0.78), rgba(15, 22, 40, 0.72)), url(images/vecteezy_back-view-of-students-in-graduation-caps-in-the-auditorium_29883857.jpg) center/cover no-repeat fixed;
     display: flex;
     flex-direction: column;
     justify-content: stretch;
