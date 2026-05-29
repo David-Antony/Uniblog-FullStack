@@ -3,8 +3,6 @@ node_modules
 .env
 logs
 data
-.aider*
-plans
 __tests__
 *.md
 !PROJECT_REFERENCE.md
