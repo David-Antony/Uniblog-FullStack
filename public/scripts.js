@@ -130,9 +130,13 @@ function debounce(func, wait) {
 // Sanitize HTML to prevent XSS attacks when displaying user content
 function sanitizeHTML(str) {
     if (!str) return '';
-    const temp = document.createElement('div');
-    temp.textContent = str;
-    return temp.innerHTML;
+    return String(str)
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<script\b[^>]*\/?>/gi, '')
+        .replace(/\bon\w+\s*=\s*["'][^"']*["']/gi, '')
+        .replace(/\bon\w+\s*=\s*[^\s>]+/gi, '')
+        .replace(/javascript\s*:/gi, '')
+        .replace(/<iframe[^>]*>.*?<\/iframe>/gi, '');
 }
 
 // Centralized error handler — logs to console and optionally shows an alert
