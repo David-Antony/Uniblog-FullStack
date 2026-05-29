@@ -21,7 +21,7 @@ blog-website/
 ├── __tests__/
 │   ├── setup.js              # In-memory MongoDB test app builder
 │   └── api.test.js           # 15 API integration tests
-└── public/
+├── public/
     ├── homepage.html         # Main page: blog grid, announcements, achievers carousel
     ├── blog.html             # Admin-only blog post editor (create/edit posts)
     ├── LOGIN_PAGE.html       # Login form (admin / student)
@@ -37,6 +37,8 @@ blog-website/
         ├── news-4.png
         ├── RATAN TATA.jpg
         └── ratan-tata-2.jpg
+└── plans/
+    └── bug-fix-plan-v1.1.0.md   # Bug fix planning document — pagination fixes + dark mode overhaul
 ```
 
 ---
@@ -251,6 +253,17 @@ blog-website/
 | **Dark Mode** | CSS custom properties swap via `[data-theme="dark"]`, localStorage persistence |
 | **Comment Threading** | Nested comment tree with parent/child relationships |
 | **Pagination** | Server-side pagination with page number controls, ellipsis |
+
+---
+
+## 🐛 Bug Fix Changelog
+
+### v1.1.0 — 2025-05-29
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+Empty blog/announcement/achiever sections | Paginated API response `{ items: [...] }` not parsed correctly by `fetchDesignItems()`, `fetchStaticBlogItems()`, `fetchAchievers()` | Extract `.items` from paginated response; fallback to raw array |
+Achiever edit button not working | `fetchAchievers()` stored empty array → `editAchiever()` returned silently | Same pagination fix — `achieversCache` now populated correctly |
+Dark mode color inconsistency | 12+ elements had no dark mode styles; 6 contrast failures (white-on-white text, invisible icons) | Added 8 semantic CSS variables + 13 `[data-theme="dark"]` element rules for search, pagination, like/share, footer, modals, Quill editor, navbar, cards, headings, stat counters |
 
 ---
 
