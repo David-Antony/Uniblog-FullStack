@@ -46,9 +46,6 @@
             padding: 0;
             background-color: #eeede8;
         }
-        [data-theme="dark"] body {
-            background-color: #12121e;
-        }
         .container {
             width: 80%;
             margin: auto;
@@ -57,10 +54,6 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             margin-top: 50px;
             position: relative;
-        }
-        [data-theme="dark"] .container {
-            background-color: #1a1a28;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
         }
         .cancel-btn {
             position: absolute;
@@ -72,22 +65,13 @@
             cursor: pointer;
             color: #4a4a5a;
         }
-        [data-theme="dark"] .cancel-btn {
-            color: #9898a8;
-        }
         .cancel-btn:hover {
             color: #c0392b;
-        }
-        [data-theme="dark"] .cancel-btn:hover {
-            color: #ff6b6b;
         }
         h1 {
             text-align: center;
             color: #2d2d3f;
             margin-bottom: 20px;
-        }
-        [data-theme="dark"] h1 {
-            color: #e8e6e3;
         }
         form {
             display: flex;
@@ -102,17 +86,9 @@
             background-color: #fffefc;
             color: #1e1e2e;
         }
-        [data-theme="dark"] select {
-            border-color: #2a2a3c;
-            background-color: #222238;
-            color: #e8e6e3;
-        }
         label {
             font-size: 18px;
             color: #4a4a5a;
-        }
-        [data-theme="dark"] label {
-            color: #9898a8;
         }
         input[type="text"], textarea, input[type="file"] {
             padding: 10px;
@@ -123,25 +99,12 @@
             background-color: #faf9f6;
             color: #1e1e2e;
         }
-        [data-theme="dark"] input[type="text"],
-        [data-theme="dark"] textarea,
-        [data-theme="dark"] input[type="file"] {
-            border-color: #2a2a3c;
-            background-color: #222238;
-            color: #e8e6e3;
-        }
         input[type="text"]:focus,
         textarea:focus {
             border-color: #c7901e;
             outline: none;
             background-color: #fffefc;
             box-shadow: 0 0 0 3px rgba(199, 144, 30, 0.15);
-        }
-        [data-theme="dark"] input[type="text"]:focus,
-        [data-theme="dark"] textarea:focus {
-            border-color: #f0c040;
-            background-color: #222238;
-            box-shadow: 0 0 0 3px rgba(240, 192, 64, 0.2);
         }
         textarea {
             height: 150px;
@@ -159,18 +122,9 @@
             border-radius: 5px;
             cursor: pointer;
         }
-        [data-theme="dark"] button {
-            background-color: #c7901e;
-            color: #1a1a28;
-            font-weight: 700;
-        }
         button:hover {
             background-color: #4a4a5a;
             color: #ffffff;
-        }
-        [data-theme="dark"] button:hover {
-            background-color: #f0c040;
-            color: #1a1a28;
         }
         .message {
             margin-top: 20px;
@@ -178,73 +132,13 @@
             color: #2d8a4e;
             text-align: center;
         }
-        [data-theme="dark"] .message {
-            color: #4ade80;
-        }
         .ql-editor {
             min-height: 250px;
-        }
-        [data-theme="dark"] .ql-toolbar.ql-snow {
-            background: #222238;
-            border-color: #2a2a3c;
-        }
-        [data-theme="dark"] .ql-toolbar.ql-snow .ql-stroke {
-            stroke: #9898a8;
-        }
-        [data-theme="dark"] .ql-toolbar.ql-snow .ql-fill {
-            fill: #9898a8;
-        }
-        [data-theme="dark"] .ql-toolbar.ql-snow .ql-picker {
-            color: #9898a8;
-        }
-        [data-theme="dark"] .ql-container.ql-snow {
-            background: #1a1a28;
-            border-color: #2a2a3c;
-            color: #e8e6e3;
-        }
-        [data-theme="dark"] .ql-editor {
-            color: #e8e6e3;
         }
     </style>
 </head>
 <body>
-    <script>
-    // ==================== Theme Toggle ====================
-    function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        updateThemeIcon(theme);
-    }
-    function toggleTheme() {
-        const current = document.documentElement.getAttribute('data-theme') || 'light';
-        const next = current === 'dark' ? 'light' : 'dark';
-        applyTheme(next);
-    }
-    function updateThemeIcon(theme) {
-        const btn = document.getElementById('theme-toggle');
-        if (!btn) return;
-        if (theme === 'dark') {
-            btn.innerHTML = '<i class="fas fa-sun"></i>';
-            btn.title = 'Switch to light mode';
-        } else {
-            btn.innerHTML = '<i class="fas fa-moon"></i>';
-            btn.title = 'Switch to dark mode';
-        }
-    }
-    function initTheme() {
-        const saved = localStorage.getItem('theme') || 'light';
-        applyTheme(saved);
-    }
-    initTheme();
-    </script>
-
     <div class="container">
-        <!-- Theme Toggle Button -->
-        <div style="position: absolute; top: 10px; right: 60px;">
-            <button id="theme-toggle" class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode">
-                <i class="fas fa-moon"></i>
-            </button>
-        </div>
         <!-- Cancel Button (X) at the top-right corner -->
         <button class="cancel-btn" onclick="cancelPost()" aria-label="Cancel and return to homepage">&times;</button>
 
