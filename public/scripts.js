@@ -410,41 +410,6 @@ function configureBlogLink() {
     }
 }
 
-// ==================== Theme Toggle ====================
-
-// Apply theme and persist to localStorage
-function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem('theme', theme);
-    updateThemeIcon(theme);
-}
-
-// Toggle between light and dark
-function toggleTheme() {
-    const current = document.documentElement.getAttribute('data-theme') || 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-}
-
-// Update the theme toggle button icon
-function updateThemeIcon(theme) {
-    const btn = document.getElementById('theme-toggle');
-    if (!btn) return;
-    if (theme === 'dark') {
-        btn.innerHTML = '<i class="fas fa-sun"></i>';
-        btn.title = 'Switch to light mode';
-    } else {
-        btn.innerHTML = '<i class="fas fa-moon"></i>';
-        btn.title = 'Switch to dark mode';
-    }
-}
-
-// Initialize theme on page load
-function initTheme() {
-    const saved = localStorage.getItem('theme') || 'light';
-    applyTheme(saved);
-}
-
 // ==================== ID & Modal Helpers ====================
 
 // Convert a MongoDB ObjectId (or string) to a plain string
@@ -1691,7 +1656,6 @@ if (hamburgerBtn && navbarNav) {
 
 // Main initialization when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', () => {
-    initTheme();
     checkAuth();
     displayUsername();
     fetchAchievers();
