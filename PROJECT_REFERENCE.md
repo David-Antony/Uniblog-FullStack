@@ -2,7 +2,7 @@
 
 > **Last Updated: 2026-05-29**
 
-> **Quick Intro:** A full-stack blog platform where **Admins** publish & manage content (posts, announcements, achievers) and **Students** browse, like, comment & share. Features JWT authentication, bcrypt password hashing, rich text editing, dark mode, pagination, Swagger API docs, and Docker support. Built with vanilla **HTML/CSS/JS** on the frontend and **Express.js + MongoDB** on the backend.
+> **Quick Intro:** A full-stack blog platform where **Admins** publish & manage content (posts, announcements, achievers) and **Students** browse, like, comment & share. Features JWT authentication, bcrypt password hashing, rich text editing, pagination, Swagger API docs, and Docker support. Built with vanilla **HTML/CSS/JS** on the frontend and **Express.js + MongoDB** on the backend.
 
 ---
 
@@ -191,7 +191,6 @@ blog-website/
 | **Page Loader** | Overlay div that fades out after 500ms on page load | Homepage |
 | **Transition Delays** | Staggered `transitionDelay` per card (`index * 60ms`) | Scroll-revealed cards |
 | **Button Loading Spinner** | Font Awesome spinner icon + disabled state during API calls | Like buttons, share buttons |
-| **Dark Mode Transition** | Smooth `background-color` + `color` transition on theme switch (0.3s) | Theme toggle |
 
 ### Interactions
 | Feature | Description |
@@ -212,7 +211,6 @@ blog-website/
 | **Rich Text Editor** | Quill.js WYSIWYG editor with bold, italic, underline, headings, lists, links, images |
 | **Nested Comments** | Reply to specific comments, threaded display |
 | **Pagination Controls** | Page numbers with Previous/Next, ellipsis for large page counts |
-| **Dark Mode Toggle** | Sun/Moon icon button in navbar, persists across sessions |
 | **View Count** | Tracks and displays how many times each post has been read |
 | **Read Time** | Estimated reading time based on word count (200 wpm) |
 
@@ -250,7 +248,6 @@ blog-website/
 | **XSS Sanitization** | `sanitizeHTML()` — renders user content as text (not HTML) to prevent injection |
 | **Component Rendering** | Each entity has `createXElement()` + `renderXItems()` + `fetchXItems()` pattern |
 | **State Caching** | All fetched data stored in `postsCache`, `designItemsCache`, `staticBlogItemsCache`, `achieversCache` |
-| **Dark Mode** | CSS custom properties swap via `[data-theme="dark"]`, localStorage persistence |
 | **Comment Threading** | Nested comment tree with parent/child relationships |
 | **Pagination** | Server-side pagination with page number controls, ellipsis |
 
@@ -261,7 +258,7 @@ blog-website/
 ### v1.2.0 — 2026-05-29
 | Change | Details |
 |--------|---------|
-| Warm Academic Color Palette | Complete redesign of light & dark mode colors across 3 files (style.css, blog.html, LOGIN_PAGE.html). Light: warm cream (#faf9f6) + navy text (#1e1e2e) + amber gold (#c7901e). Dark: espresso (#12121e) + ivory text (#e8e6e3) + bright gold (#f0c040). 40+ element rules covered. |
+| Warm Academic Color Palette | Complete redesign of light mode colors across 3 files (style.css, blog.html, LOGIN_PAGE.html) — warm cream (#faf9f6) + navy text (#1e1e2e) + amber gold (#c7901e). 40+ element rules covered. |
 
 ### v1.3.0 — 2026-05-29
 | Change | Details |
@@ -276,7 +273,6 @@ blog-website/
 |-----|-----------|-----|
 Empty blog/announcement/achiever sections | Paginated API response `{ items: [...] }` not parsed correctly by `fetchDesignItems()`, `fetchStaticBlogItems()`, `fetchAchievers()` | Extract `.items` from paginated response; fallback to raw array |
 Achiever edit button not working | `fetchAchievers()` stored empty array → `editAchiever()` returned silently | Same pagination fix — `achieversCache` now populated correctly |
-Dark mode color inconsistency | 12+ elements had no dark mode styles; 6 contrast failures (white-on-white text, invisible icons) | Added 8 semantic CSS variables + 13 `[data-theme="dark"]` element rules for search, pagination, like/share, footer, modals, Quill editor, navbar, cards, headings, stat counters |
 
 ---
 
