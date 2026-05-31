@@ -26,6 +26,7 @@
     <title>UniBlog — Blog Editor</title>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA==" crossorigin="anonymous" />
+    <link rel="stylesheet" href="style.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800;900&family=Quicksand:wght@300;400;500;600;700&display=swap');
         :root{
@@ -138,6 +139,22 @@
     </style>
 </head>
 <body>
+    <!-- Frosted Glass Scholar Navbar -->
+    <nav class="navbar" role="navigation" aria-label="Main navigation">
+        <div class="container">
+            <a class="navbar-brand" href="homepage.html" aria-label="Campus News and Blog Platform Home">Campus News and Blog Platform</a>
+            <span id="username-display" aria-live="polite" style="margin-left: 10px; font-weight: bold;"></span>
+            <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="navbar-nav" id="navbarNav">
+                <a href="blog.html" id="blogLink" class="primary-cta" aria-label="Add new blog post">Add Post</a>
+                <a href="#" onclick="openModal('aboutModal')" aria-label="About this platform">ABOUT</a>
+                <a href="logout.html" aria-label="Logout from the platform">LOGOUT</a>
+            </div>
+        </div>
+    </nav>
+
     <div class="container">
         <!-- Cancel Button (X) at the top-right corner -->
         <button class="cancel-btn" onclick="cancelPost()" aria-label="Cancel and return to homepage">&times;</button>
@@ -188,6 +205,7 @@
     </div>
 
     <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="scripts.js"></script>
     <script>
     const form = document.getElementById('addPostForm');
     const message = document.getElementById('message');
