@@ -1,6 +1,6 @@
 # 🚀 Blog Website — Project Reference
 
-> **Last Updated: 2026-05-29**
+> **Last Updated: 2026-05-31**
 
 > **Quick Intro:** A full-stack blog platform where **Admins** publish & manage content (posts, announcements, achievers) and **Students** browse, like, comment & share. Features JWT authentication, bcrypt password hashing, rich text editing, pagination, Swagger API docs, and Docker support. Built with vanilla **HTML/CSS/JS** on the frontend and **Express.js + MongoDB** on the backend.
 
@@ -111,7 +111,7 @@ blog-website/
 |---|---|
 | **Vanilla JavaScript** | All DOM manipulation, API calls, event handling |
 | **CSS Grid** | Blog post grid layout, design items grid |
-| **CSS Flexbox** | Navbar, card content, modal form layouts |
+| **CSS Flexbox** | Frosted Glass Scholar navbar, footer grid, card content, modal form layouts |
 | **CSS Variables (Custom Properties)** | Theming — colors, spacing, border-radius, z-index, typography |
 | **CSS Keyframe Animations** | Float animation, modal slide-in |
 | **CSS Media Queries** | Responsive design — mobile, tablet, desktop breakpoints |
@@ -191,6 +191,8 @@ blog-website/
 | **Page Loader** | Overlay div that fades out after 500ms on page load | Homepage |
 | **Transition Delays** | Staggered `transitionDelay` per card (`index * 60ms`) | Scroll-revealed cards |
 | **Button Loading Spinner** | Font Awesome spinner icon + disabled state during API calls | Like buttons, share buttons |
+| **Navbar Glass Transition** | `window.addEventListener('scroll', ...)` toggles `.scrolled` class at 60px threshold → transparent → frosted cream glass with `backdrop-filter: blur(16px)` | Frosted Glass Scholar navbar (all pages) |
+| **Center-Slide Underline** | CSS `::after` pseudo-element with `transform: scaleX(0)` → `scaleX(1)` on hover using `cubic-bezier(0.25, 0.46, 0.45, 0.94)` | Navbar & footer links |
 
 ### Interactions
 | Feature | Description |
@@ -199,7 +201,7 @@ blog-website/
 | **Share** | Uses Web Share API on mobile, clipboard copy fallback on desktop |
 | **Search** | Debounced (300ms) text search — filters posts by title & description |
 | **Category Filters** | Checkboxes (Announcement, Design, News, General) — toggle to filter posts |
-| **Hamburger Menu** | Mobile responsive — toggles nav links with smooth transition |
+| **Hamburger Menu** | Mobile responsive — part of the Frosted Glass Scholar navbar; toggles nav links with smooth transition |
 | **Achievers Carousel** | Previous/Next buttons cycle through achiever profiles |
 | **Confirmation Modal** | Custom "Are you sure?" dialog for delete operations |
 | **ESC to Close** | Press Escape key to close any open modal |
@@ -217,7 +219,7 @@ blog-website/
 ### Responsive Design
 | Breakpoint | Behavior |
 |---|---|
-| **Desktop (>992px)** | Multi-column grid, full navbar, side-by-side layouts |
+| **Desktop (>992px)** | Multi-column grid, full Frosted Glass Scholar navbar, side-by-side layouts |
 | **Tablet (768–992px)** | Reduced columns, adjusted font sizes |
 | **Mobile (<768px)** | Single column, hamburger menu, stacked cards, compact forms |
 
@@ -254,6 +256,12 @@ blog-website/
 ---
 
 ## 🐛 Bug Fix Changelog
+
+### v1.4.0 — 2026-05-31
+| Change | Details |
+|--------|---------|
+| **Frosted Glass Scholar Navbar** | Replaced the entire navbar across all pages ([`homepage.html`](public/homepage.html), [`blog.html`](public/blog.html)) with a "Frosted Glass Scholar" design. At the top of the page the navbar is transparent with white text, blending cleanly over any hero background. On scroll past 60px, the navbar transforms into a frosted cream glass panel (`background: rgba(250, 249, 246, 0.72)` + `backdrop-filter: blur(16px)`) with navy text, creating a sophisticated layered depth effect. Navigation links feature a center-slide gold underline hover animation powered by `cubic-bezier(0.25, 0.46, 0.45, 0.94)` for a refined scholarly feel. Added [`initNavbarScroll()`](public/scripts.js) to [`scripts.js`](public/scripts.js) — a `window.addEventListener('scroll', ...)` handler that toggles a `.scrolled` CSS class on the `<nav>` element at the 60px threshold. |
+| **Frosted Glass Footer Redesign** | Redesigned the site footer to match the navbar's frosted glass aesthetic. The footer is always visible with frosted cream glass (`background: rgba(250, 249, 246, 0.85)` + `backdrop-filter: blur(16px)`), a subtle gold top border (`border-top: 1px solid rgba(199, 144, 30, 0.3)`), and a 3-column grid layout (Brand/About + Quick Links + Resources). Navigation links use the same center-slide gold underline hover effect as the navbar. Social media icons have a gold color hover with a subtle `translateY(-2px)` lift effect. Footer was also added to [`blog.html`](public/blog.html) (previously missing). |
 
 ### v1.2.0 — 2026-05-29
 | Change | Details |
@@ -474,4 +482,4 @@ docker compose up --build
 
 ---
 
-> **Last Updated:** May 2026 &nbsp;|&nbsp; **Project Type:** Full-Stack Web Application &nbsp;|&nbsp; **License:** ISC
+> **Last Updated:** 31 May 2026 &nbsp;|&nbsp; **Project Type:** Full-Stack Web Application &nbsp;|&nbsp; **License:** ISC
