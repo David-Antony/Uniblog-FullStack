@@ -277,14 +277,28 @@ header {
     }
 }
 
-/* Navbar */
+/* --- Navbar: Frosted Glass Scholar --- */
+
 .navbar {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    backdrop-filter: blur(10px);
-    padding: 1rem 1.2rem;
-    border-radius: var(--border-radius-xl);
-    margin-top: 1rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: transparent;
+    transition: background 0.35s ease, backdrop-filter 0.35s ease, box-shadow 0.35s ease, padding 0.35s ease;
+}
+
+.navbar.scrolled {
+    background: rgba(250, 249, 246, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 1px 3px rgba(30, 30, 46, 0.06), 0 4px 12px rgba(30, 30, 46, 0.04);
+    padding: 0.75rem 2rem;
 }
 
 .navbar .container {
@@ -292,15 +306,23 @@ header {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
+    width: 100%;
 }
 
+/* Logo / Brand */
 .navbar-brand {
-    color: var(--white);
+    color: #fff;
     font-size: 1.5rem;
     display: block;
     text-align: center;
     font-family: var(--Playfair);
     letter-spacing: 1px;
+    text-decoration: none;
+    transition: color 0.35s ease;
+}
+
+.navbar.scrolled .navbar-brand {
+    color: #1e1e2e;
 }
 
 /* Hamburger Button */
@@ -310,20 +332,25 @@ header {
     border: none;
     cursor: pointer;
     padding: 0.5rem;
-    z-index: 100;
+    z-index: 1100;
     position: absolute;
-    top: 1.5rem;
+    top: 1.25rem;
     right: 1.5rem;
+    transition: background-color 0.35s ease;
 }
 
 .hamburger-btn span {
     display: block;
     width: 25px;
     height: 3px;
-    background-color: var(--white);
+    background-color: #fff;
     margin: 5px 0;
-    transition: all 0.3s ease;
+    transition: all 0.3s ease, background-color 0.35s ease;
     border-radius: 3px;
+}
+
+.navbar.scrolled .hamburger-btn span {
+    background-color: #1e1e2e;
 }
 
 .hamburger-btn.active span:nth-child(1) {
@@ -338,41 +365,103 @@ header {
     transform: rotate(-45deg) translate(7px, -7px);
 }
 
+/* Navigation Links */
 .navbar-nav {
     padding: 0.6rem 0 0.2rem 0;
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 2rem;
     justify-content: center;
     flex-direction: column;
     width: 100%;
     max-height: 0;
     overflow: hidden;
     transition: max-height 0.3s ease;
+    background: transparent;
 }
 
 .navbar-nav.active {
-    max-height: 300px;
+    max-height: 400px;
+}
+
+/* Mobile: frosted glass for the open nav panel */
+@media (max-width: 767px) {
+    .navbar-nav.active {
+        background: rgba(250, 249, 246, 0.85);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-radius: 0 0 12px 12px;
+        padding-bottom: 1rem;
+    }
 }
 
 .navbar-nav a {
+    position: relative;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.35rem 0;
+    transition: color 0.25s ease;
     text-transform: uppercase;
     font-family: var(--Roboto);
-    letter-spacing: 1px;
-    font-weight: 500;
-    color: var(--white);
+    letter-spacing: 2px;
     display: inline-block;
-    padding: 0.4rem 0.6rem;
-    letter-spacing: 3px;
-    transition: opacity var(--transition-normal);
 }
 
+.navbar.scrolled .navbar-nav a {
+    color: #1e1e2e;
+}
+
+/* Center-slide gold underline on hover */
+.navbar-nav a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: #c7901e;
+    transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94), left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-radius: 1px;
+}
+
+.navbar-nav a:hover::after,
+.navbar-nav a.active::after {
+    width: 100%;
+    left: 0;
+}
+
+.navbar-nav a:hover {
+    color: #c7901e;
+    opacity: 1;
+}
+
+/* Primary CTA / Auth button */
 .primary-cta {
-    padding: 0.45rem 1rem;
-    border: 1px solid var(--gold);
+    padding: 0.45rem 1.2rem;
+    border: 1px solid #c7901e;
     border-radius: var(--border-radius-pill);
     background: rgba(199, 144, 30, 0.18);
-    color: var(--white);
+    color: #fff;
+    text-transform: uppercase;
+    font-family: var(--Roboto);
+    font-weight: 500;
+    font-size: 0.95rem;
+    letter-spacing: 2px;
+    transition: all 0.35s ease;
+    display: inline-block;
+}
+
+.navbar.scrolled .primary-cta {
+    background: rgba(199, 144, 30, 0.12);
+    color: #1e1e2e;
+    border-color: #c7901e;
+}
+
+.primary-cta:hover {
+    background: rgba(199, 144, 30, 0.3);
+    opacity: 1;
 }
 
 /* Banner */
