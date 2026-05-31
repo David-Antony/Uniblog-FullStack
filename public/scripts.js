@@ -1629,6 +1629,37 @@ function getImageInputValue(textInputId) {
     return val;
 }
 
+// ==================== Navbar: Frosted Glass Scholar Scroll Effect ====================
+
+// Toggle .scrolled class on the navbar when page scrolls past 60px.
+// Uses requestAnimationFrame for performance and { passive: true } for smooth scrolling.
+function initNavbarScroll() {
+    const navbar = document.querySelector('.navbar');
+    if (!navbar) return;
+
+    const scrollThreshold = 60;
+    let ticking = false;
+
+    const updateNavbar = () => {
+        if (window.scrollY > scrollThreshold) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+        ticking = false;
+    };
+
+    window.addEventListener('scroll', () => {
+        if (!ticking) {
+            window.requestAnimationFrame(updateNavbar);
+            ticking = true;
+        }
+    }, { passive: true });
+
+    // Initial check in case the page loads already scrolled
+    updateNavbar();
+}
+
 // ==================== Event Listeners ====================
 
 // Hide the page loader overlay after a brief delay
@@ -1664,6 +1695,9 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchPosts();
     fetchDesignItems();
     fetchStaticBlogItems();
+    
+    // Initialize Frosted Glass Scholar navbar scroll effect
+    initNavbarScroll();
     
     // Setup combined image inputs (URL text + Browse button)
     setupImageInputGroup('designImageUrl', 'designImageFile', 'browseDesignImage');
