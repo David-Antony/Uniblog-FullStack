@@ -564,6 +564,10 @@ function renderPosts(posts) {
     if (!postsContainer) return;
     postsContainer.innerHTML = '';
 
+    // Clean up any existing show-more button from a previous render
+    const existingBtn = document.getElementById('show-more-posts-btn');
+    if (existingBtn) existingBtn.remove();
+
     if (!posts || !posts.length) {
         postsContainer.innerHTML = '<p class="empty-posts">📭 No posts yet. <a href="blog.html">Add the first post!</a></p>';
         if (section) section.style.display = 'block';
@@ -571,10 +575,37 @@ function renderPosts(posts) {
     }
     if (section) section.style.display = 'block';
 
-    posts.forEach((post) => {
+    const VISIBLE_COUNT = 4;
+
+    posts.forEach((post, index) => {
         const postElement = createPostElement(post);
+        if (index >= VISIBLE_COUNT) {
+            postElement.classList.add('post-hidden');
+        }
         postsContainer.appendChild(postElement);
     });
+
+    // Show More / Show Less toggle button
+    if (posts.length > VISIBLE_COUNT) {
+        const button = document.createElement('button');
+        button.id = 'show-more-posts-btn';
+        button.className = 'show-more-btn';
+        button.textContent = `Show More (${posts.length - VISIBLE_COUNT} more)`;
+        button.addEventListener('click', function () {
+            const hiddenPosts = postsContainer.querySelectorAll('.blog-post.post-hidden');
+            if (hiddenPosts.length > 0) {
+                hiddenPosts.forEach(el => el.classList.remove('post-hidden'));
+                button.textContent = 'Show Less';
+            } else {
+                const allPosts = postsContainer.querySelectorAll('.blog-post');
+                allPosts.forEach((el, i) => {
+                    if (i >= VISIBLE_COUNT) el.classList.add('post-hidden');
+                });
+                button.textContent = `Show More (${posts.length - VISIBLE_COUNT} more)`;
+            }
+        });
+        postsContainer.insertAdjacentElement('afterend', button);
+    }
 
     attachPostEventListeners();
     setupReveal();
@@ -887,7 +918,7 @@ function renderDesignItems(items) {
         return;
     }
 
-    items.forEach((item) => {
+    items.forEach((item, index) => {
         const itemElement = createDesignItemElement(item);
         designContainer.appendChild(itemElement);
     });
