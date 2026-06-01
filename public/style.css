@@ -1003,11 +1003,9 @@ button:hover,
     left: 10px;
     background: rgba(0, 0, 0, 0.75);
     color: var(--white);
-    padding: 0.35rem 0.65rem;
     border-radius: var(--border-radius-lg);
     display: inline-flex;
     align-items: center;
-    gap: 0.3rem;
 }
 
 .design-img span:last-of-type {
@@ -1020,35 +1018,56 @@ button:hover,
     font-size: 1.1rem;
 }
 
-/* Heart/Like Button */
+/* Heart/Like Button — Frosted Glass Scholar theme */
 .heart {
     cursor: pointer;
-    font-weight: 700;
+    font-weight: 600;
     display: inline-flex;
     align-items: center;
-    gap: 0.6rem;
-    padding: 0.4rem 0.9rem;
-    border-radius: var(--border-radius-lg);
-    background: rgba(0, 0, 0, 0.75);
-    color: var(--white);
-    min-width: 60px;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(250, 249, 246, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: #1e1e2e;
+    min-width: fit-content;
     justify-content: center;
     z-index: 5;
+    white-space: nowrap;
+    user-select: none;
+    transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
 }
 
 .heart i {
     font-size: 1rem;
-    min-width: 1.2em;
+    color: #c7901e;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
 }
 
 .heart .count {
-    font-size: 0.95rem;
+    font-size: 0.9rem;
+    font-weight: 600;
     line-height: 1;
-    margin-left: 0.1rem;
+    flex-shrink: 0;
+}
+
+.heart:hover {
+    transform: scale(1.05);
+}
+
+.heart:active {
+    transform: scale(0.95);
+}
+
+.heart.liked {
+    background: #c7901e;
+    color: #faf9f6;
 }
 
 .heart.liked i {
-    color: var(--yellow-gold);
+    color: #faf9f6;
 }
 
 .design-title {
