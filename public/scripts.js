@@ -913,15 +913,46 @@ function renderDesignItems(items) {
     
     designContainer.innerHTML = '';
 
+    // Clean up any existing show-more button from a previous render
+    const existingBtn = document.getElementById('show-more-design-btn');
+    if (existingBtn) existingBtn.remove();
+
     if (!items || !items.length) {
         designContainer.innerHTML = '<p class="empty-posts">📭 No announcements yet.</p>';
         return;
     }
 
+    const VISIBLE_COUNT = 3;
+
     items.forEach((item, index) => {
         const itemElement = createDesignItemElement(item);
+        if (index >= VISIBLE_COUNT) {
+            itemElement.classList.add('static-hidden');
+        }
         designContainer.appendChild(itemElement);
     });
+
+    // Show More / Show Less toggle button
+    if (items.length > VISIBLE_COUNT) {
+        const button = document.createElement('button');
+        button.id = 'show-more-design-btn';
+        button.className = 'show-more-btn';
+        button.textContent = `Show More (${items.length - VISIBLE_COUNT} more)`;
+        button.addEventListener('click', function () {
+            const hiddenItems = designContainer.querySelectorAll('.design-item.static-hidden');
+            if (hiddenItems.length > 0) {
+                hiddenItems.forEach(el => el.classList.remove('static-hidden'));
+                button.textContent = 'Show Less';
+            } else {
+                const allItems = designContainer.querySelectorAll('.design-item');
+                allItems.forEach((el, i) => {
+                    if (i >= VISIBLE_COUNT) el.classList.add('static-hidden');
+                });
+                button.textContent = `Show More (${items.length - VISIBLE_COUNT} more)`;
+            }
+        });
+        designContainer.insertAdjacentElement('afterend', button);
+    }
 
     setupReveal();
 }
