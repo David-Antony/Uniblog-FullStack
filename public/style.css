@@ -2220,3 +2220,33 @@ footer .footer-bottom {
     from { transform: translateX(0); opacity: 1; }
     to   { transform: translateX(120%); opacity: 0; }
 }
+
+/* ==================== Show More / Show Less Toggle ==================== */
+
+/* .show-more-btn {
+    display: block;
+    margin: 1.5rem auto 0;
+    padding: 0.65rem 1.8rem;
+    background: rgba(250, 249, 246, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(199, 144, 30, 0.25);
+    color: #c7901e;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.show-more-btn:hover {
+    background: #c7901e;
+    color: #faf9f6;
+    border-color: #c7901e;
+    box-shadow: 0 4px 16px rgba(199, 144, 30, 0.25);
+} */
+
+.post-hidden,
+.static-hidden {
+    display: none;
+}
