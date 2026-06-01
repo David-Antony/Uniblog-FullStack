@@ -2223,7 +2223,7 @@ footer .footer-bottom {
 
 /* ==================== Show More / Show Less Toggle ==================== */
 
-/* .show-more-btn {
+.show-more-btn {
     display: block;
     margin: 1.5rem auto 0;
     padding: 0.65rem 1.8rem;
@@ -2244,7 +2244,7 @@ footer .footer-bottom {
     color: #faf9f6;
     border-color: #c7901e;
     box-shadow: 0 4px 16px rgba(199, 144, 30, 0.25);
-} */
+}
 
 .post-hidden,
 .static-hidden {
