@@ -71,6 +71,47 @@
             color: #1e1e2e;
         }
 
+        .auth-switcher {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 0 0 24px;
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 12px 14px;
+            border: 1px solid #e0dfdb;
+            background: #faf9f6;
+            color: #4a4a5a;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s ease;
+        }
+
+        .auth-tab.active {
+            background: #1e1e2e;
+            color: #f0ede8;
+            border-color: #1e1e2e;
+        }
+
+        .auth-panel {
+            display: none;
+        }
+
+        .auth-panel.active {
+            display: block;
+        }
+
+        .auth-note {
+            margin-top: -8px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            color: #6b6b7a;
+            text-align: left;
+        }
+
         form {
             display: flex;
             flex-direction: column;
@@ -177,32 +218,96 @@
     <div class="blob"></div>
     <div class="container">
         <h1>Login</h1>
-        <form id="loginForm" action="/login" method="POST">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
-            <label for="password">Password:</label>
+        <div class="auth-switcher" role="tablist" aria-label="Authentication options">
+            <button type="button" class="auth-tab active" id="loginTab" aria-selected="true">Login</button>
+            <button type="button" class="auth-tab" id="signupTab" aria-selected="false">Sign Up</button>
+        </div>
+
+        <form id="loginForm" class="auth-panel active" action="/login" method="POST">
+            <label for="loginUsername">Username:</label>
+            <input type="text" id="loginUsername" name="username" required>
+            <label for="loginPassword">Password:</label>
             <div class="password-wrap">
-                <input type="password" id="password" name="password" required>
-                <button type="button" class="eye-btn" id="togglePassword" aria-label="Show password">👁️</button>
+                <input type="password" id="loginPassword" name="password" required>
+                <button type="button" class="eye-btn" id="toggleLoginPassword" aria-label="Show password">👁️</button>
             </div>
             <button type="submit" aria-label="Login to your account">Login</button>
+        </form>
+
+        <form id="signupForm" class="auth-panel" action="/signup" method="POST">
+            <p class="auth-note">New accounts are created as student users by default.</p>
+            <label for="signupUsername">Username:</label>
+            <input type="text" id="signupUsername" name="username" required>
+            <label for="signupPassword">Password:</label>
+            <div class="password-wrap">
+                <input type="password" id="signupPassword" name="password" required>
+                <button type="button" class="eye-btn" id="toggleSignupPassword" aria-label="Show password">👁️</button>
+            </div>
+            <label for="confirmPassword">Confirm Password:</label>
+            <div class="password-wrap">
+                <input type="password" id="confirmPassword" name="confirmPassword" required>
+                <button type="button" class="eye-btn" id="toggleConfirmPassword" aria-label="Show password">👁️</button>
+            </div>
+            <button type="submit" aria-label="Create your account">Create Account</button>
         </form>
         <p id="error-message" style="color: red;"></p>
     </div>
 
     <script>
         const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
         const errorMessage = document.getElementById('error-message');
-        const passwordInput = document.getElementById('password');
-        const togglePassword = document.getElementById('togglePassword');
-        let lockedVisible = false;
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const loginPasswordInput = document.getElementById('loginPassword');
+        const signupPasswordInput = document.getElementById('signupPassword');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const toggleLoginPassword = document.getElementById('toggleLoginPassword');
+        const toggleSignupPassword = document.getElementById('toggleSignupPassword');
+        const toggleConfirmPassword = document.getElementById('toggleConfirmPassword');
+        let loginVisible = false;
+        let signupVisible = false;
+        let confirmVisible = false;
+
+        function setActiveTab(mode) {
+            const loginMode = mode === 'login';
+            loginForm.classList.toggle('active', loginMode);
+            signupForm.classList.toggle('active', !loginMode);
+            loginTab.classList.toggle('active', loginMode);
+            signupTab.classList.toggle('active', !loginMode);
+            loginTab.setAttribute('aria-selected', loginMode ? 'true' : 'false');
+            signupTab.setAttribute('aria-selected', loginMode ? 'false' : 'true');
+            errorMessage.textContent = '';
+        }
+
+        loginTab.addEventListener('click', () => setActiveTab('login'));
+        signupTab.addEventListener('click', () => setActiveTab('signup'));
+
+        function applyVisibility(input, forceVisible, lockedVisible) {
+            const show = forceVisible || lockedVisible;
+            input.type = show ? 'text' : 'password';
+        }
+
+        function bindPasswordToggle(button, input, stateGetter, stateSetter) {
+            button.addEventListener('mousedown', () => applyVisibility(input, true, stateGetter()));
+            button.addEventListener('mouseup', () => applyVisibility(input, false, stateGetter()));
+            button.addEventListener('mouseleave', () => applyVisibility(input, false, stateGetter()));
+            button.addEventListener('click', () => {
+                stateSetter(!stateGetter());
+                applyVisibility(input, false, stateGetter());
+            });
+        }
+
+        bindPasswordToggle(toggleLoginPassword, loginPasswordInput, () => loginVisible, (value) => loginVisible = value);
+        bindPasswordToggle(toggleSignupPassword, signupPasswordInput, () => signupVisible, (value) => signupVisible = value);
+        bindPasswordToggle(toggleConfirmPassword, confirmPasswordInput, () => confirmVisible, (value) => confirmVisible = value);
 
         loginForm.addEventListener('submit', async function(event) {
             event.preventDefault();
             errorMessage.textContent = "";
 
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
 
             try {
                 const res = await fetch('/api/login', {
@@ -226,6 +331,41 @@
             }
         });
 
+        signupForm.addEventListener('submit', async function(event) {
+            event.preventDefault();
+            errorMessage.textContent = "";
+
+            const username = document.getElementById('signupUsername').value.trim();
+            const password = document.getElementById('signupPassword').value.trim();
+            const confirmPassword = document.getElementById('confirmPassword').value.trim();
+
+            if (password !== confirmPassword) {
+                errorMessage.textContent = "Passwords do not match.";
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/signup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('role', data.role);
+                    localStorage.setItem('username', data.username);
+                    window.location.href = "homepage.html";
+                } else {
+                    errorMessage.textContent = data.message || "Could not create account.";
+                }
+            } catch (err) {
+                console.error("Signup error:", err);
+                errorMessage.textContent = "Server unreachable. Please try again.";
+            }
+        });
+
         // interactive cursor glow
         document.addEventListener('mousemove', (e) => {
             const x = (e.clientX / window.innerWidth) * 100;
@@ -234,17 +374,7 @@
             document.documentElement.style.setProperty('--my', `${y}%`);
         });
 
-        function applyVisibility(forceVisible) {
-            const show = forceVisible || lockedVisible;
-            passwordInput.type = show ? 'text' : 'password';
-        }
-        togglePassword.addEventListener('mousedown', () => applyVisibility(true));
-        togglePassword.addEventListener('mouseup', () => applyVisibility(false));
-        togglePassword.addEventListener('mouseleave', () => applyVisibility(false));
-        togglePassword.addEventListener('click', () => {
-            lockedVisible = !lockedVisible;
-            applyVisibility();
-        });
+        setActiveTab('login');
     </script>
 </body>
 </html>
