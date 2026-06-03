@@ -998,19 +998,14 @@ button:hover,
     transform: scale(1.2);
 }
 
-.design-img span:first-of-type {
+.design-like-badge {
     position: absolute;
     z-index: 1;
     top: 10px;
     left: 10px;
-    background: rgba(0, 0, 0, 0.75);
-    color: var(--white);
-    border-radius: var(--border-radius-lg);
-    display: inline-flex;
-    align-items: center;
 }
 
-.design-img span:last-of-type {
+.design-category-badge {
     position: absolute;
     z-index: 1;
     bottom: 10px;
@@ -1027,18 +1022,19 @@ button:hover,
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 0.45rem 0.8rem;
+    border-radius: var(--border-radius-pill);
     background: rgba(250, 249, 246, 0.85);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     color: #1e1e2e;
-    min-width: fit-content;
+    min-width: 76px;
     justify-content: center;
     z-index: 5;
     white-space: nowrap;
     user-select: none;
     transition: background 0.25s ease, color 0.25s ease, transform 0.2s ease;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .heart i {
@@ -1053,6 +1049,8 @@ button:hover,
     font-weight: 600;
     line-height: 1;
     flex-shrink: 0;
+    min-width: 1.8ch;
+    text-align: center;
 }
 
 .heart:hover {

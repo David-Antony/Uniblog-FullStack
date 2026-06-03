@@ -58,6 +58,29 @@ function usersCol() {
     return db.collection('users');
 }
 
+function normalizeUsername(username) {
+    return String(username || '').trim().toLowerCase();
+}
+
+function validateSignupInput(username, password) {
+    const cleanUsername = normalizeUsername(username);
+    const cleanPassword = String(password || '').trim();
+
+    if (!cleanUsername || cleanUsername.length < 3) {
+        return { ok: false, message: 'Username must be at least 3 characters long' };
+    }
+
+    if (!/^[a-z0-9._-]+$/.test(cleanUsername)) {
+        return { ok: false, message: 'Username can only contain letters, numbers, dots, underscores, and hyphens' };
+    }
+
+    if (!cleanPassword || cleanPassword.length < 6) {
+        return { ok: false, message: 'Password must be at least 6 characters long' };
+    }
+
+    return { ok: true, username: cleanUsername, password: cleanPassword };
+}
+
 async function ensureDefaultUsers() {
     const now = new Date();
     const seeds = [
@@ -905,7 +928,8 @@ app.get('/api/admin/audits', verifyToken, async (req, res) => {
  */
 app.post('/api/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const username = normalizeUsername(req.body.username);
+        const password = String(req.body.password || '').trim();
         if (!username || !password) {
             return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Username and password are required');
         }
@@ -925,6 +949,70 @@ app.post('/api/login', async (req, res) => {
         sendOk(res, HTTP_STATUS.OK, { token, username, role: user.role });
     } catch (err) {
         console.error('❌ Login error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+/**
+ * @swagger
+ * /api/signup:
+ *   post:
+ *     summary: Create a new student account
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [username, password]
+ *             properties:
+ *               username: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       201:
+ *         description: Account created
+ *       400:
+ *         description: Invalid input
+ *       409:
+ *         description: Username already exists
+ */
+app.post('/api/signup', async (req, res) => {
+    try {
+        const validation = validateSignupInput(req.body.username, req.body.password);
+        if (!validation.ok) {
+            return sendError(res, HTTP_STATUS.BAD_REQUEST, validation.message);
+        }
+
+        const existing = await usersCol().findOne({ username: validation.username });
+        if (existing) {
+            return sendError(res, 409, 'Username already exists');
+        }
+
+        const passwordHash = await bcrypt.hash(validation.password, 10);
+        const now = new Date();
+        const userDoc = {
+            username: validation.username,
+            passwordHash,
+            role: 'student',
+            createdAt: now,
+            updatedAt: now
+        };
+
+        await usersCol().insertOne(userDoc);
+
+        const token = generateToken({ username: userDoc.username, role: userDoc.role });
+        console.log(`🧑‍🎓 New student signed up: ${userDoc.username}`);
+        sendOk(res, HTTP_STATUS.CREATED, {
+            token,
+            username: userDoc.username,
+            role: userDoc.role
+        });
+    } catch (err) {
+        console.error('❌ Signup error:', err);
+        if (err.code === 11000) {
+            return sendError(res, 409, 'Username already exists');
+        }
         sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
     }
 });
