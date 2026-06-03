@@ -54,6 +54,42 @@ function hashPasswords() {
     console.log('🔐 User password hashes generated');
 }
 
+function usersCol() {
+    return db.collection('users');
+}
+
+async function ensureDefaultUsers() {
+    const now = new Date();
+    const seeds = [
+        {
+            username: 'admin',
+            role: 'admin',
+            passwordHash: VALID_USERS.admin.passwordHash
+        },
+        {
+            username: 'student',
+            role: 'student',
+            passwordHash: VALID_USERS.student.passwordHash
+        }
+    ];
+
+    for (const user of seeds) {
+        await usersCol().updateOne(
+            { username: user.username },
+            {
+                $setOnInsert: {
+                    username: user.username,
+                    role: user.role,
+                    passwordHash: user.passwordHash,
+                    createdAt: now,
+                    updatedAt: now
+                }
+            },
+            { upsert: true }
+        );
+    }
+}
+
 function generateToken(user) {
     return jwt.sign(
         { username: user.username, role: user.role },
@@ -99,9 +135,10 @@ async function connectDB() {
         console.log('   Database:', DB_NAME);
 
         // Ensure indexes for performance
+        await db.collection('users').createIndex({ username: 1 }, { unique: true });
         await db.collection('posts').createIndex({ createdAt: -1 });
         await db.collection('posts').createIndex({ category: 1 });
-        console.log('   Indexes ensured on posts collection');
+        console.log('   Indexes ensured on users and posts collections');
     } catch (err) {
         console.error('❌ MongoDB connection error:', err.message);
         console.error('   Make sure MongoDB is running on your machine.');
@@ -873,7 +910,7 @@ app.post('/api/login', async (req, res) => {
             return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Username and password are required');
         }
         
-        const user = VALID_USERS[username];
+        const user = await usersCol().findOne({ username });
         if (!user) {
             return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid credentials');
         }
@@ -984,6 +1021,7 @@ app.use((req, res) => {
 async function startServer() {
     hashPasswords();
     await connectDB();
+    await ensureDefaultUsers();
     app.listen(port, () => {
         console.log(`\n🚀 Blog Server running at: http://localhost:${port}`);
         console.log('   Homepage: http://localhost:' + port + '/homepage.html');
