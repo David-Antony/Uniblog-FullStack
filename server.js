@@ -745,6 +745,20 @@ app.post('/api/admin/recompute-like-counts', verifyToken, async (req, res) => {
         const targets = ['posts', 'designItems', 'staticBlogItems', 'achievers'];
         const result = await recomputeLikeCountsForCollections(targets);
         console.log('🛠️ Admin recompute performed by', req.user.username);
+
+        // Persist audit record for history and UI
+        try {
+            const auditsCol = db.collection('adminAudits');
+            await auditsCol.insertOne({
+                action: 'recompute-like-counts',
+                user: req.user.username,
+                timestamp: new Date(),
+                result
+            });
+        } catch (err) {
+            console.error('❌ Failed to persist admin audit record:', err.message);
+        }
+
         sendOk(res, HTTP_STATUS.OK, { result });
     } catch (err) {
         console.error('❌ Admin recompute error:', err);
@@ -767,6 +781,19 @@ app.get('/api/admin/audit-indexes', verifyToken, async (req, res) => {
         sendOk(res, HTTP_STATUS.OK, { indexes: idx });
     } catch (err) {
         console.error('❌ Admin audit indexes error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+// Return recent admin audit records
+app.get('/api/admin/audits', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+        const col = db.collection('adminAudits');
+        const rows = await col.find().sort({ timestamp: -1 }).limit(100).toArray();
+        sendOk(res, HTTP_STATUS.OK, { audits: rows });
+    } catch (err) {
+        console.error('❌ Error fetching admin audits:', err);
         sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
     }
 });
