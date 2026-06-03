@@ -31,7 +31,14 @@ document.getElementById('btn-recompute').addEventListener('click', async () => {
     }
   }
   const confirmMsg = 'Dry-run summary:\n' + summaryLines.join('\n') + '\n\nProceed to apply recompute to the DB?';
-  if (!confirm(confirmMsg)) {
+  // Prefer site's custom modal if available
+  let proceed = false;
+  if (typeof showConfirmModal === 'function') {
+    proceed = await showConfirmModal(confirmMsg);
+  } else {
+    proceed = confirm(confirmMsg);
+  }
+  if (!proceed) {
     out.value = 'Recompute cancelled by user.';
     return;
   }
