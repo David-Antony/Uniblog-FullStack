@@ -17,8 +17,26 @@ document.getElementById('btn-audit').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-recompute').addEventListener('click', async () => {
-  out.value = 'Running recompute...';
+  out.value = 'Fetching dry-run diff...';
   const t = tokenInput.value.trim();
+  // fetch dry-run diff first
+  const dry = await callApi('/api/admin/recompute-like-counts/dry', 'GET', t || null);
+  out.value = JSON.stringify(dry, null, 2);
+
+  // present a concise summary and ask for confirmation
+  const summaryLines = [];
+  if (dry && dry.success && dry.diff) {
+    for (const [col, info] of Object.entries(dry.diff)) {
+      summaryLines.push(`${col}: matched=${info.matched}, anomalies=${info.anomalies}`);
+    }
+  }
+  const confirmMsg = 'Dry-run summary:\n' + summaryLines.join('\n') + '\n\nProceed to apply recompute to the DB?';
+  if (!confirm(confirmMsg)) {
+    out.value = 'Recompute cancelled by user.';
+    return;
+  }
+
+  out.value = 'Running recompute...';
   const result = await callApi('/api/admin/recompute-like-counts', 'POST', t || null);
   out.value = JSON.stringify(result, null, 2);
 });

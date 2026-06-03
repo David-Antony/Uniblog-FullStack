@@ -715,6 +715,49 @@ async function recomputeLikeCountsForCollections(collectionNames) {
     return summary;
 }
 
+// Compute diffs without applying updates (dry-run)
+async function computeLikeCountsDiff(collectionNames) {
+    const summary = {};
+    for (const name of collectionNames) {
+        const col = db.collection(name);
+        const cursor = col.find();
+        let matched = 0, anomalies = 0;
+        const samples = [];
+
+        while (await cursor.hasNext()) {
+            const doc = await cursor.next();
+            const likedBy = Array.isArray(doc.likedBy) ? doc.likedBy : [];
+            const desired = likedBy.length;
+            const current = (typeof doc.likeCount === 'number' && Number.isFinite(doc.likeCount)) ? doc.likeCount : null;
+            const isAnomaly = current !== desired || current === null || current < 0 || !Number.isInteger(current) || Math.abs(current) > 1e12;
+            if (isAnomaly) {
+                matched++;
+                anomalies++;
+                samples.push({ _id: doc._id, current, desired });
+                if (samples.length >= 5) continue;
+            }
+        }
+
+        summary[name] = { matched, anomalies, sample: samples };
+    }
+    return summary;
+}
+
+/**
+ * Dry-run endpoint: compute diffs but do NOT modify the DB
+ */
+app.get('/api/admin/recompute-like-counts/dry', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+        const targets = ['posts', 'designItems', 'staticBlogItems', 'achievers'];
+        const diff = await computeLikeCountsDiff(targets);
+        sendOk(res, HTTP_STATUS.OK, { diff });
+    } catch (err) {
+        console.error('❌ Admin dry-run error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
 async function auditIndexes() {
     const info = {};
     const collections = await db.listCollections().toArray();
