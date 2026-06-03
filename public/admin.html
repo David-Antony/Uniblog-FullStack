@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Audit & Recompute</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body { padding: 1rem; font-family: Arial, sans-serif; }
+    .card { background:#fff; border-radius:8px; padding:1rem; box-shadow:0 4px 18px rgba(0,0,0,0.06); max-width:900px; margin:0 auto }
+    textarea { width:100%; height:240px; font-family: monospace; white-space:pre; }
+    .row { display:flex; gap:8px; margin-bottom:8px }
+    input[type=text] { flex:1 }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Admin: Audit & Recompute</h2>
+    <p>Paste an admin JWT below, then run the audit or recompute operations.</p>
+    <div class="row">
+      <input id="token" type="text" placeholder="Bearer token" />
+      <button id="btn-audit">Audit Indexes</button>
+      <button id="btn-recompute">Recompute Like Counts</button>
+    </div>
+
+    <div style="margin-bottom:8px">
+      <button id="btn-history">Load Audit History</button>
+    </div>
+
+    <h3>Result</h3>
+    <textarea id="output" readonly></textarea>
+  </div>
+
+  <script src="/admin.js"></script>
+</body>
+</html>

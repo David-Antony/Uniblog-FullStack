@@ -543,14 +543,14 @@ createCrudRoutes({
         title: body.title,
         imageUrl: body.imageUrl,
         category: body.category,
-        likeCount: body.likeCount || 0,
+        likeCount: 0,
         likedBy: []
     }),
-    buildUpdate: (body) => {
-        const data = { title: body.title, imageUrl: body.imageUrl, category: body.category };
-        if (body.likeCount !== undefined) data.likeCount = body.likeCount;
-        return data;
-    },
+    buildUpdate: (body) => ({
+        title: body.title,
+        imageUrl: body.imageUrl,
+        category: body.category
+    }),
     extraRoutes: (app, basePath, collection, label, col) => {
         addLikeRoute(app, basePath, collection, label, col);
     }
@@ -679,6 +679,125 @@ app.delete('/posts/:postId/comments/:id', verifyToken, async (req, res) => {
         sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
     }
 });
+
+// -------------------- Admin Utilities: Recompute & Audit --------------------
+
+async function recomputeLikeCountsForCollections(collectionNames) {
+    const summary = {};
+    for (const name of collectionNames) {
+        const col = db.collection(name);
+        const cursor = col.find();
+        let matched = 0, modified = 0, anomalies = 0;
+        const bulk = col.initializeUnorderedBulkOp();
+
+        while (await cursor.hasNext()) {
+            const doc = await cursor.next();
+            const likedBy = Array.isArray(doc.likedBy) ? doc.likedBy : [];
+            const desired = likedBy.length;
+            const current = (typeof doc.likeCount === 'number' && Number.isFinite(doc.likeCount)) ? doc.likeCount : null;
+
+            // Consider as anomaly if likeCount differs from desired, is missing, negative, non-integer, or extremely large
+            const isAnomaly = current !== desired || current === null || current < 0 || !Number.isInteger(current) || Math.abs(current) > 1e12;
+            if (isAnomaly) {
+                anomalies++;
+                matched++;
+                bulk.find({ _id: doc._id }).updateOne({ $set: { likedBy: likedBy, likeCount: desired } });
+            }
+        }
+
+        if (matched > 0) {
+            const result = await bulk.execute();
+            modified = result.nModified || result.nModified === undefined ? (result.nModified || Object.values(result).reduce((s, v) => s + (v.nModified || 0), 0)) : result.nModified;
+        }
+
+        summary[name] = { checked: true, matched, modified, anomalies };
+    }
+    return summary;
+}
+
+async function auditIndexes() {
+    const info = {};
+    const collections = await db.listCollections().toArray();
+    for (const c of collections) {
+        try {
+            const idx = await db.collection(c.name).indexes();
+            info[c.name] = idx;
+        } catch (err) {
+            info[c.name] = { error: err.message };
+        }
+    }
+    return info;
+}
+
+/**
+ * @swagger
+ * /api/admin/recompute-like-counts:
+ *   post:
+ *     summary: Recompute like counts across collections (Admin only)
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }]
+ */
+app.post('/api/admin/recompute-like-counts', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+
+        // Collections to target — only those that may carry likeCount/likedBy fields
+        const targets = ['posts', 'designItems', 'staticBlogItems', 'achievers'];
+        const result = await recomputeLikeCountsForCollections(targets);
+        console.log('🛠️ Admin recompute performed by', req.user.username);
+
+        // Persist audit record for history and UI
+        try {
+            const auditsCol = db.collection('adminAudits');
+            await auditsCol.insertOne({
+                action: 'recompute-like-counts',
+                user: req.user.username,
+                timestamp: new Date(),
+                result
+            });
+        } catch (err) {
+            console.error('❌ Failed to persist admin audit record:', err.message);
+        }
+
+        sendOk(res, HTTP_STATUS.OK, { result });
+    } catch (err) {
+        console.error('❌ Admin recompute error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/audit-indexes:
+ *   get:
+ *     summary: Audit DB indexes across collections (Admin only)
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }]
+ */
+app.get('/api/admin/audit-indexes', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+        const idx = await auditIndexes();
+        sendOk(res, HTTP_STATUS.OK, { indexes: idx });
+    } catch (err) {
+        console.error('❌ Admin audit indexes error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+// Return recent admin audit records
+app.get('/api/admin/audits', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+        const col = db.collection('adminAudits');
+        const rows = await col.find().sort({ timestamp: -1 }).limit(100).toArray();
+        sendOk(res, HTTP_STATUS.OK, { audits: rows });
+    } catch (err) {
+        console.error('❌ Error fetching admin audits:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
 
 // ==================== Authentication ====================
 
