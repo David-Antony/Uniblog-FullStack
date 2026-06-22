@@ -325,6 +325,19 @@ header {
     color: #1e1e2e;
 }
 
+.navbar-user {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+    margin-left: 0.75rem;
+    margin-right: 2rem;
+}
+
+.navbar.scrolled .navbar-user {
+    color: #1e1e2e;
+}
+
 /* Hamburger Button */
 .hamburger-btn {
     display: block;
@@ -1972,6 +1985,7 @@ footer .footer-bottom {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
+        gap: 1rem;
     }
     
     .hamburger-btn {
@@ -1982,6 +1996,10 @@ footer .footer-bottom {
         flex-direction: row;
         max-height: none;
         width: auto;
+    }
+
+    .navbar-user {
+        margin-right: 1.75rem;
     }
     
     .search-input {
@@ -2056,6 +2074,10 @@ footer .footer-bottom {
     .navbar-nav a {
         padding-right: 1.2rem;
         padding-left: 1.2rem;
+    }
+
+    .navbar-user {
+        margin-right: 2.25rem;
     }
 }
 
