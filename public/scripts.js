@@ -532,7 +532,7 @@ async function fetchPosts(page = 1) {
             postsCache.forEach(async post => {
                 const count = await fetchCommentCount(idToString(post._id));
                 const badge = document.getElementById(`comment-count-${idToString(post._id)}`);
-                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${count} comments`;
+                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${formatCompactCount(count)} comments`;
             });
         } else if (Array.isArray(data)) {
             postsCache = data;
@@ -541,7 +541,7 @@ async function fetchPosts(page = 1) {
             postsCache.forEach(async post => {
                 const count = await fetchCommentCount(idToString(post._id));
                 const badge = document.getElementById(`comment-count-${idToString(post._id)}`);
-                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${count} comments`;
+                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${formatCompactCount(count)} comments`;
             });
         }
         
@@ -651,7 +651,7 @@ function createPostElement(post) {
 
     const postStats = `
         <div class="post-stats">
-            <span class="post-stat"><i class="far fa-eye"></i> ${viewCount} views</span>
+            <span class="post-stat"><i class="far fa-eye"></i> ${formatCompactCount(viewCount)} views</span>
             <span class="post-stat"><i class="far fa-clock"></i> ${calculateReadTime(post.content)} min read</span>
             <span class="post-stat" id="comment-count-${postId}">
                 <i class="far fa-comment"></i> <span>...</span> comments
@@ -672,10 +672,10 @@ function createPostElement(post) {
                 </button>
                 <button class="like-btn ${liked ? 'liked' : ''}" data-id="${postId}">
                     <i class="fas fa-heart"></i>
-                    <span class="like-count">${likeCount}</span>
+                    <span class="like-count">${formatCompactCount(likeCount)}</span>
                 </button>
                 <button class="share-btn" data-id="${postId}" data-title="${post.title.replace(/"/g, '"')}">
-                    <i class="fas fa-share"></i> ${shareCount}
+                    <i class="fas fa-share"></i> ${formatCompactCount(shareCount)}
                 </button>
                 ${editButton}
                 ${deleteButton}
