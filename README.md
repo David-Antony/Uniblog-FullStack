@@ -167,7 +167,3 @@ docker compose up --build
 Starts the app on port 3001 with a MongoDB 7 container.
 
 ---
-
-## License
-
-MIT
