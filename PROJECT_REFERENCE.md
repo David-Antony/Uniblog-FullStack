@@ -357,7 +357,7 @@ npm install
 #    JWT_SECRET=your_jwt_secret
 
 # 3. Start MongoDB (must be running locally)
-mongod
+mongod --dbpath C:\data\db
 
 # 4. Start the server
 npm start

@@ -54,6 +54,65 @@ function hashPasswords() {
     console.log('🔐 User password hashes generated');
 }
 
+function usersCol() {
+    return db.collection('users');
+}
+
+function normalizeUsername(username) {
+    return String(username || '').trim().toLowerCase();
+}
+
+function validateSignupInput(username, password) {
+    const cleanUsername = normalizeUsername(username);
+    const cleanPassword = String(password || '').trim();
+
+    if (!cleanUsername || cleanUsername.length < 3) {
+        return { ok: false, message: 'Username must be at least 3 characters long' };
+    }
+
+    if (!/^[a-z0-9._-]+$/.test(cleanUsername)) {
+        return { ok: false, message: 'Username can only contain letters, numbers, dots, underscores, and hyphens' };
+    }
+
+    if (!cleanPassword || cleanPassword.length < 6) {
+        return { ok: false, message: 'Password must be at least 6 characters long' };
+    }
+
+    return { ok: true, username: cleanUsername, password: cleanPassword };
+}
+
+async function ensureDefaultUsers() {
+    const now = new Date();
+    const seeds = [
+        {
+            username: 'admin',
+            role: 'admin',
+            passwordHash: VALID_USERS.admin.passwordHash
+        },
+        {
+            username: 'student',
+            role: 'student',
+            passwordHash: VALID_USERS.student.passwordHash
+        }
+    ];
+
+    for (const user of seeds) {
+        await usersCol().updateOne(
+            { username: user.username },
+            {
+                $setOnInsert: {
+                    username: user.username,
+                    role: user.role,
+                    passwordHash: user.passwordHash,
+                    createdAt: now,
+                    updatedAt: now
+                }
+            },
+            { upsert: true }
+        );
+    }
+}
+
 function generateToken(user) {
     return jwt.sign(
         { username: user.username, role: user.role },
@@ -99,9 +158,10 @@ async function connectDB() {
         console.log('   Database:', DB_NAME);
 
         // Ensure indexes for performance
+        await db.collection('users').createIndex({ username: 1 }, { unique: true });
         await db.collection('posts').createIndex({ createdAt: -1 });
         await db.collection('posts').createIndex({ category: 1 });
-        console.log('   Indexes ensured on posts collection');
+        console.log('   Indexes ensured on users and posts collections');
     } catch (err) {
         console.error('❌ MongoDB connection error:', err.message);
         console.error('   Make sure MongoDB is running on your machine.');
@@ -543,14 +603,14 @@ createCrudRoutes({
         title: body.title,
         imageUrl: body.imageUrl,
         category: body.category,
-        likeCount: body.likeCount || 0,
+        likeCount: 0,
         likedBy: []
     }),
-    buildUpdate: (body) => {
-        const data = { title: body.title, imageUrl: body.imageUrl, category: body.category };
-        if (body.likeCount !== undefined) data.likeCount = body.likeCount;
-        return data;
-    },
+    buildUpdate: (body) => ({
+        title: body.title,
+        imageUrl: body.imageUrl,
+        category: body.category
+    }),
     extraRoutes: (app, basePath, collection, label, col) => {
         addLikeRoute(app, basePath, collection, label, col);
     }
@@ -680,6 +740,168 @@ app.delete('/posts/:postId/comments/:id', verifyToken, async (req, res) => {
     }
 });
 
+// -------------------- Admin Utilities: Recompute & Audit --------------------
+
+async function recomputeLikeCountsForCollections(collectionNames) {
+    const summary = {};
+    for (const name of collectionNames) {
+        const col = db.collection(name);
+        const cursor = col.find();
+        let matched = 0, modified = 0, anomalies = 0;
+        const bulk = col.initializeUnorderedBulkOp();
+
+        while (await cursor.hasNext()) {
+            const doc = await cursor.next();
+            const likedBy = Array.isArray(doc.likedBy) ? doc.likedBy : [];
+            const desired = likedBy.length;
+            const current = (typeof doc.likeCount === 'number' && Number.isFinite(doc.likeCount)) ? doc.likeCount : null;
+
+            // Consider as anomaly if likeCount differs from desired, is missing, negative, non-integer, or extremely large
+            const isAnomaly = current !== desired || current === null || current < 0 || !Number.isInteger(current) || Math.abs(current) > 1e12;
+            if (isAnomaly) {
+                anomalies++;
+                matched++;
+                bulk.find({ _id: doc._id }).updateOne({ $set: { likedBy: likedBy, likeCount: desired } });
+            }
+        }
+
+        if (matched > 0) {
+            const result = await bulk.execute();
+            modified = result.nModified || result.nModified === undefined ? (result.nModified || Object.values(result).reduce((s, v) => s + (v.nModified || 0), 0)) : result.nModified;
+        }
+
+        summary[name] = { checked: true, matched, modified, anomalies };
+    }
+    return summary;
+}
+
+// Compute diffs without applying updates (dry-run)
+async function computeLikeCountsDiff(collectionNames) {
+    const summary = {};
+    for (const name of collectionNames) {
+        const col = db.collection(name);
+        const cursor = col.find();
+        let matched = 0, anomalies = 0;
+        const samples = [];
+
+        while (await cursor.hasNext()) {
+            const doc = await cursor.next();
+            const likedBy = Array.isArray(doc.likedBy) ? doc.likedBy : [];
+            const desired = likedBy.length;
+            const current = (typeof doc.likeCount === 'number' && Number.isFinite(doc.likeCount)) ? doc.likeCount : null;
+            const isAnomaly = current !== desired || current === null || current < 0 || !Number.isInteger(current) || Math.abs(current) > 1e12;
+            if (isAnomaly) {
+                matched++;
+                anomalies++;
+                samples.push({ _id: doc._id, current, desired });
+                if (samples.length >= 5) continue;
+            }
+        }
+
+        summary[name] = { matched, anomalies, sample: samples };
+    }
+    return summary;
+}
+
+/**
+ * Dry-run endpoint: compute diffs but do NOT modify the DB
+ */
+app.get('/api/admin/recompute-like-counts/dry', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+        const targets = ['posts', 'designItems', 'staticBlogItems', 'achievers'];
+        const diff = await computeLikeCountsDiff(targets);
+        sendOk(res, HTTP_STATUS.OK, { diff });
+    } catch (err) {
+        console.error('❌ Admin dry-run error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+async function auditIndexes() {
+    const info = {};
+    const collections = await db.listCollections().toArray();
+    for (const c of collections) {
+        try {
+            const idx = await db.collection(c.name).indexes();
+            info[c.name] = idx;
+        } catch (err) {
+            info[c.name] = { error: err.message };
+        }
+    }
+    return info;
+}
+
+/**
+ * @swagger
+ * /api/admin/recompute-like-counts:
+ *   post:
+ *     summary: Recompute like counts across collections (Admin only)
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }]
+ */
+app.post('/api/admin/recompute-like-counts', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+
+        // Collections to target — only those that may carry likeCount/likedBy fields
+        const targets = ['posts', 'designItems', 'staticBlogItems', 'achievers'];
+        const result = await recomputeLikeCountsForCollections(targets);
+        console.log('🛠️ Admin recompute performed by', req.user.username);
+
+        // Persist audit record for history and UI
+        try {
+            const auditsCol = db.collection('adminAudits');
+            await auditsCol.insertOne({
+                action: 'recompute-like-counts',
+                user: req.user.username,
+                timestamp: new Date(),
+                result
+            });
+        } catch (err) {
+            console.error('❌ Failed to persist admin audit record:', err.message);
+        }
+
+        sendOk(res, HTTP_STATUS.OK, { result });
+    } catch (err) {
+        console.error('❌ Admin recompute error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+/**
+ * @swagger
+ * /api/admin/audit-indexes:
+ *   get:
+ *     summary: Audit DB indexes across collections (Admin only)
+ *     tags: [Admin]
+ *     security: [{ bearerAuth: [] }]
+ */
+app.get('/api/admin/audit-indexes', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+        const idx = await auditIndexes();
+        sendOk(res, HTTP_STATUS.OK, { indexes: idx });
+    } catch (err) {
+        console.error('❌ Admin audit indexes error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+// Return recent admin audit records
+app.get('/api/admin/audits', verifyToken, async (req, res) => {
+    try {
+        if (!isAdmin(req)) return sendError(res, HTTP_STATUS.FORBIDDEN, 'Only admins can perform this action');
+        const col = db.collection('adminAudits');
+        const rows = await col.find().sort({ timestamp: -1 }).limit(100).toArray();
+        sendOk(res, HTTP_STATUS.OK, { audits: rows });
+    } catch (err) {
+        console.error('❌ Error fetching admin audits:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+
 // ==================== Authentication ====================
 
 /**
@@ -706,12 +928,13 @@ app.delete('/posts/:postId/comments/:id', verifyToken, async (req, res) => {
  */
 app.post('/api/login', async (req, res) => {
     try {
-        const { username, password } = req.body;
+        const username = normalizeUsername(req.body.username);
+        const password = String(req.body.password || '').trim();
         if (!username || !password) {
             return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Username and password are required');
         }
         
-        const user = VALID_USERS[username];
+        const user = await usersCol().findOne({ username });
         if (!user) {
             return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid credentials');
         }
@@ -726,6 +949,70 @@ app.post('/api/login', async (req, res) => {
         sendOk(res, HTTP_STATUS.OK, { token, username, role: user.role });
     } catch (err) {
         console.error('❌ Login error:', err);
+        sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
+    }
+});
+
+/**
+ * @swagger
+ * /api/signup:
+ *   post:
+ *     summary: Create a new student account
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [username, password]
+ *             properties:
+ *               username: { type: string }
+ *               password: { type: string }
+ *     responses:
+ *       201:
+ *         description: Account created
+ *       400:
+ *         description: Invalid input
+ *       409:
+ *         description: Username already exists
+ */
+app.post('/api/signup', async (req, res) => {
+    try {
+        const validation = validateSignupInput(req.body.username, req.body.password);
+        if (!validation.ok) {
+            return sendError(res, HTTP_STATUS.BAD_REQUEST, validation.message);
+        }
+
+        const existing = await usersCol().findOne({ username: validation.username });
+        if (existing) {
+            return sendError(res, 409, 'Username already exists');
+        }
+
+        const passwordHash = await bcrypt.hash(validation.password, 10);
+        const now = new Date();
+        const userDoc = {
+            username: validation.username,
+            passwordHash,
+            role: 'student',
+            createdAt: now,
+            updatedAt: now
+        };
+
+        await usersCol().insertOne(userDoc);
+
+        const token = generateToken({ username: userDoc.username, role: userDoc.role });
+        console.log(`🧑‍🎓 New student signed up: ${userDoc.username}`);
+        sendOk(res, HTTP_STATUS.CREATED, {
+            token,
+            username: userDoc.username,
+            role: userDoc.role
+        });
+    } catch (err) {
+        console.error('❌ Signup error:', err);
+        if (err.code === 11000) {
+            return sendError(res, 409, 'Username already exists');
+        }
         sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error occurred');
     }
 });
@@ -822,6 +1109,7 @@ app.use((req, res) => {
 async function startServer() {
     hashPasswords();
     await connectDB();
+    await ensureDefaultUsers();
     app.listen(port, () => {
         console.log(`\n🚀 Blog Server running at: http://localhost:${port}`);
         console.log('   Homepage: http://localhost:' + port + '/homepage.html');

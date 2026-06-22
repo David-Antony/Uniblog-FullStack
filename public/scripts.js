@@ -158,6 +158,23 @@ function calculateReadTime(content) {
     return Math.max(1, Math.ceil(wordCount / 200));
 }
 
+// Format counters so compact badges stay readable in tight card overlays.
+function formatCompactCount(value) {
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue) || numericValue <= 0) {
+        return '0';
+    }
+
+    if (numericValue < 1000) {
+        return String(Math.round(numericValue));
+    }
+
+    return new Intl.NumberFormat('en', {
+        notation: 'compact',
+        maximumFractionDigits: 1
+    }).format(numericValue);
+}
+
 // ==================== Shared Entity Helpers ====================
 
 // Update a cache array's like data for the matching item (used by all toggle-like functions)
@@ -515,7 +532,7 @@ async function fetchPosts(page = 1) {
             postsCache.forEach(async post => {
                 const count = await fetchCommentCount(idToString(post._id));
                 const badge = document.getElementById(`comment-count-${idToString(post._id)}`);
-                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${count} comments`;
+                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${formatCompactCount(count)} comments`;
             });
         } else if (Array.isArray(data)) {
             postsCache = data;
@@ -524,7 +541,7 @@ async function fetchPosts(page = 1) {
             postsCache.forEach(async post => {
                 const count = await fetchCommentCount(idToString(post._id));
                 const badge = document.getElementById(`comment-count-${idToString(post._id)}`);
-                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${count} comments`;
+                if (badge) badge.innerHTML = `<i class="far fa-comment"></i> ${formatCompactCount(count)} comments`;
             });
         }
         
@@ -634,7 +651,7 @@ function createPostElement(post) {
 
     const postStats = `
         <div class="post-stats">
-            <span class="post-stat"><i class="far fa-eye"></i> ${viewCount} views</span>
+            <span class="post-stat"><i class="far fa-eye"></i> ${formatCompactCount(viewCount)} views</span>
             <span class="post-stat"><i class="far fa-clock"></i> ${calculateReadTime(post.content)} min read</span>
             <span class="post-stat" id="comment-count-${postId}">
                 <i class="far fa-comment"></i> <span>...</span> comments
@@ -655,10 +672,10 @@ function createPostElement(post) {
                 </button>
                 <button class="like-btn ${liked ? 'liked' : ''}" data-id="${postId}">
                     <i class="fas fa-heart"></i>
-                    <span class="like-count">${likeCount}</span>
+                    <span class="like-count">${formatCompactCount(likeCount)}</span>
                 </button>
                 <button class="share-btn" data-id="${postId}" data-title="${post.title.replace(/"/g, '"')}">
-                    <i class="fas fa-share"></i> ${shareCount}
+                    <i class="fas fa-share"></i> ${formatCompactCount(shareCount)}
                 </button>
                 ${editButton}
                 ${deleteButton}
@@ -977,11 +994,11 @@ function createDesignItemElement(item) {
     itemElement.innerHTML = `
         <div class="design-img">
             <img src="${item.imageUrl}" alt="${sanitizeHTML(item.title)}" loading="lazy">
-            <span class="heart ${liked ? 'liked' : ''}" onclick="toggleDesignLike('${itemId}')">
+            <span class="heart design-like-badge ${liked ? 'liked' : ''}" onclick="toggleDesignLike('${itemId}')" role="button" aria-label="Like announcement">
                 <i class="${liked ? 'fas' : 'far'} fa-heart"></i>
-                <span class="count">${likeCount}</span>
+                <span class="count">${formatCompactCount(likeCount)}</span>
             </span>
-            <span>${sanitizeHTML(category)}</span>
+            <span class="design-category-badge">${sanitizeHTML(category)}</span>
         </div>
         <div class="design-title">
             <p>${sanitizeHTML(item.title)}</p>

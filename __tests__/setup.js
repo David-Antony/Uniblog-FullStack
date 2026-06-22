@@ -36,6 +36,33 @@ function generateToken(user) {
     return jwt.sign({ username: user.username, role: user.role }, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
 
+function usersCol() {
+    return db.collection('users');
+}
+
+function normalizeUsername(username) {
+    return String(username || '').trim().toLowerCase();
+}
+
+function validateSignupInput(username, password) {
+    const cleanUsername = normalizeUsername(username);
+    const cleanPassword = String(password || '').trim();
+
+    if (!cleanUsername || cleanUsername.length < 3) {
+        return { ok: false, message: 'Username must be at least 3 characters long' };
+    }
+
+    if (!/^[a-z0-9._-]+$/.test(cleanUsername)) {
+        return { ok: false, message: 'Username can only contain letters, numbers, dots, underscores, and hyphens' };
+    }
+
+    if (!cleanPassword || cleanPassword.length < 6) {
+        return { ok: false, message: 'Password must be at least 6 characters long' };
+    }
+
+    return { ok: true, username: cleanUsername, password: cleanPassword };
+}
+
 function verifyToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -153,6 +180,35 @@ async function setupTestApp() {
     const adminHash = await bcrypt.hash('admin123', 10);
     const studentHash = await bcrypt.hash('student123', 10);
 
+    await usersCol().createIndex({ username: 1 }, { unique: true });
+    const now = new Date();
+    await usersCol().updateOne(
+        { username: 'admin' },
+        {
+            $setOnInsert: {
+                username: 'admin',
+                passwordHash: adminHash,
+                role: 'admin',
+                createdAt: now,
+                updatedAt: now
+            }
+        },
+        { upsert: true }
+    );
+    await usersCol().updateOne(
+        { username: 'student' },
+        {
+            $setOnInsert: {
+                username: 'student',
+                passwordHash: studentHash,
+                role: 'student',
+                createdAt: now,
+                updatedAt: now
+            }
+        },
+        { upsert: true }
+    );
+
     // Create Express app
     app = express();
     app.use(bodyParser.json({ limit: '50mb' }));
@@ -161,15 +217,41 @@ async function setupTestApp() {
     app.get('/api/health', (req, res) => res.json({ status: 'ok', dbConnected: true }));
 
     app.post('/api/login', async (req, res) => {
-        const { username, password } = req.body;
+        const username = normalizeUsername(req.body.username);
+        const password = String(req.body.password || '').trim();
         if (!username || !password) return sendError(res, HTTP_STATUS.BAD_REQUEST, 'Username and password are required');
-        const users = { admin: adminHash, student: studentHash };
-        const hash = users[username];
-        if (!hash) return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid credentials');
-        const match = await bcrypt.compare(password, hash);
+        const user = await usersCol().findOne({ username });
+        if (!user) return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid credentials');
+        const match = await bcrypt.compare(password, user.passwordHash);
         if (!match) return sendError(res, HTTP_STATUS.UNAUTHORIZED, 'Invalid credentials');
-        const token = generateToken({ username, role: username === 'admin' ? 'admin' : 'student' });
-        sendOk(res, HTTP_STATUS.OK, { token, username, role: username === 'admin' ? 'admin' : 'student' });
+        const token = generateToken({ username: user.username, role: user.role });
+        sendOk(res, HTTP_STATUS.OK, { token, username: user.username, role: user.role });
+    });
+
+    app.post('/api/signup', async (req, res) => {
+        try {
+            const validation = validateSignupInput(req.body.username, req.body.password);
+            if (!validation.ok) return sendError(res, HTTP_STATUS.BAD_REQUEST, validation.message);
+
+            const existing = await usersCol().findOne({ username: validation.username });
+            if (existing) return sendError(res, 409, 'Username already exists');
+
+            const passwordHash = await bcrypt.hash(validation.password, 10);
+            const user = {
+                username: validation.username,
+                passwordHash,
+                role: 'student',
+                createdAt: new Date(),
+                updatedAt: new Date()
+            };
+            await usersCol().insertOne(user);
+
+            const token = generateToken({ username: user.username, role: user.role });
+            sendOk(res, HTTP_STATUS.CREATED, { token, username: user.username, role: user.role });
+        } catch (err) {
+            if (err.code === 11000) return sendError(res, 409, 'Username already exists');
+            sendError(res, HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error');
+        }
     });
 
     // Posts
