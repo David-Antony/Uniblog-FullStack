@@ -167,3 +167,9 @@ docker compose up --build
 Starts the app on port 3001 with a MongoDB 7 container.
 
 ---
+
+ ## Live Demo
+
+The project is ready for deployment on platforms like Vercel, Render, or AWS.  
+👉 **[Live Demo URL](https://github.com/David-Antony/QuantVault-Real-Time-Investment-Portfolio-Intelligence-Platform)** *
+Not yet deployed..will be available once deployed..
