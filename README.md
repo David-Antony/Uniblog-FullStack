@@ -1,6 +1,6 @@
 # UniBlog — Campus News & Blog Platform
 
-A full-stack blog platform built for university communities. Features role-based access (Admin & Student), rich text editing, comments, dark mode, and a modern responsive design.
+A full-stack blog platform built for university communities. Features role-based access (Admin & Student), rich text editing, comments, dark mode, and a modern responsive design.AFull fledged website under developement and would be ready with best optimized website.
 
 ![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen) ![Express](https://img.shields.io/badge/express-5.x-blue) ![MongoDB](https://img.shields.io/badge/mongodb-7.x-green) ![License](https://img.shields.io/badge/license-MIT-blue)
 
